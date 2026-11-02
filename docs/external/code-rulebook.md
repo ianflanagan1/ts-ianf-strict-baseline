@@ -1,6 +1,6 @@
 # code-rulebook
 
-[code-rulebook](https://github.com/ianflanagan1/code-rulebook) states the rules every baseline enforces. `check-listing` checks `rulebook-coverage.json` against the rulebook, and code-rulebook's `coverage` task reads the listing as committed to build its COVERAGE.md.
+[code-rulebook](https://github.com/ianflanagan1/code-rulebook) states the rules every baseline enforces. The `rulebook` task runs `check-listing` from the release `RULEBOOK_RELEASE` pins over `rulebook-coverage.json`, and code-rulebook's `coverage` task reads the listing as committed to build its COVERAGE.md.
 
 | What                                                  | Where in the rulebook         | Coupling                                                                                       |
 | ----------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------- |

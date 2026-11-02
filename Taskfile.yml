@@ -17,15 +17,28 @@ tasks:
       - pnpm build
 
   check:
-    desc: Build, then the shared check, whose verify runs the built CLI on the package itself
+    desc: Build, then the shared check, whose verify runs the built CLI on the package itself, then check the rulebook listing
     cmds:
       - task: build
       - task: baseline:check
+      - task: rulebook
 
   rulebook-coverage:
     desc: Write rulebook-coverage.json, how ts-baseline enforces the code rulebook
     cmds:
       - node src/cli.ts rulebook > rulebook-coverage.json
+
+  rulebook:
+    desc: Check rulebook-coverage.json against the release of the code rulebook it is assessed for
+    vars:
+      # Moving to a new release means assessing what it changed.
+      RULEBOOK_RELEASE: v0.1.0
+    env:
+      # code-rulebook is private; Git needs access to it, as the README says.
+      GOPRIVATE: github.com/ianflanagan1/code-rulebook
+      GOTOOLCHAIN: local
+    cmds:
+      - go run github.com/ianflanagan1/code-rulebook/cmd/code-rulebook@{{.RULEBOOK_RELEASE}} check-listing
 
   format:
     desc: Format every file
