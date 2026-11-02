@@ -59,6 +59,8 @@ const requiredErrorRules = [
   '@typescript-eslint/no-floating-promises',
   '@typescript-eslint/only-throw-error',
   '@typescript-eslint/no-unnecessary-condition',
+  '@typescript-eslint/prefer-readonly',
+  'no-param-reassign',
   'no-restricted-syntax',
 ];
 

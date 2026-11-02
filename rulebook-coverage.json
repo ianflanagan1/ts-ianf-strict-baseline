@@ -83,12 +83,22 @@
     "banned-syntax": {
       "kind": "tool",
       "tool": "eslint",
-      "summary": "no-restricted-syntax bans enums, default and optional parameters, and a class extending anything but JavaScript's own errors."
+      "summary": "no-restricted-syntax bans enums, default and optional parameters, let and var, and a class extending anything but JavaScript's own errors."
     },
     "switch-exhaustiveness": {
       "kind": "tool",
       "tool": "eslint",
       "summary": "@typescript-eslint/switch-exhaustiveness-check: a switch on a union names every member, and has no default arm once it does, with considerDefaultExhaustiveForUnions and allowDefaultCaseForExhaustiveSwitch off."
+    },
+    "no-param-reassign": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "no-param-reassign: no function assigns to one of its parameters, including from a closure."
+    },
+    "prefer-readonly": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/prefer-readonly: a private field that is never reassigned is declared readonly."
     },
     "no-unused-result": {
       "kind": "custom",
@@ -398,7 +408,14 @@
     },
     "fields-are-declared-read-only": {
       "case": "supported",
-      "coverage": "none"
+      "coverage": "partial",
+      "checks": [
+        "prefer-readonly"
+      ],
+      "gap": "Only a private field that is never reassigned is reported: a public or protected field, and a read-only field whose type lets its contents change, such as an array rather than a ReadonlyArray, aren't.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: fields-are-declared-read-only"
+      ]
     },
     "fields-are-assigned-only-at-construction": {
       "coverage": "none"
@@ -407,11 +424,24 @@
       "coverage": "none"
     },
     "parameters-are-not-reassigned": {
-      "coverage": "none"
+      "coverage": "full",
+      "checks": [
+        "no-param-reassign"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: parameters-are-not-reassigned"
+      ]
     },
     "locals-are-declared-constant": {
       "case": "supported",
-      "coverage": "none"
+      "coverage": "full",
+      "checks": [
+        "banned-syntax"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: locals-are-declared-constant"
+      ],
+      "note": "let and var are banned outright, so every local is const."
     },
     "returned-failures-are-used": {
       "coverage": "partial",

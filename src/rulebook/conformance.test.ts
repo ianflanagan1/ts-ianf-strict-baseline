@@ -162,6 +162,23 @@ describe('conformance', () => {
     expect(reported('no-restricted-syntax', 'design/optional')).toBe(1);
   });
 
+  it('parameters-are-not-reassigned', () => {
+    for (const module of ['assignedParameter', 'compoundParameter', 'incrementedParameter', 'defaultedParameter', 'closureParameter']) {
+      expect(reported('no-param-reassign', `design/${module}`), module).toBe(1);
+    }
+  });
+
+  it('locals-are-declared-constant', () => {
+    for (const module of ['reassignedLocal', 'neverReassignedLet', 'varLocal', 'assignedInBranches', 'assignedInTry', 'suiteState']) {
+      expect(reported('no-restricted-syntax', `design/${module}`), module).toBe(1);
+    }
+    expect(reported('no-restricted-syntax', 'design/loopCounter')).toBe(2);
+  });
+
+  it('fields-are-declared-read-only', () => {
+    expect(reported('@typescript-eslint/prefer-readonly', 'design/mutableField')).toBe(1);
+  });
+
   it('returned-failures-are-used', () => {
     expect(reported('ts-baseline/no-unused-result', 'design/dropsResult')).toBe(1);
     expect(reported('@typescript-eslint/no-unused-vars', 'design/dropsResult')).toBe(1);

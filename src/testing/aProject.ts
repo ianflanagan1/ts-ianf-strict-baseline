@@ -46,6 +46,8 @@ export function aConformingProject(): ProjectBuilder {
       '@typescript-eslint/no-floating-promises': error(),
       '@typescript-eslint/only-throw-error': error(),
       '@typescript-eslint/no-unnecessary-condition': error(),
+      '@typescript-eslint/prefer-readonly': error(),
+      'no-param-reassign': error({ props: false }),
       'no-restricted-syntax': error(...bannedSyntax),
     },
     eslintRoleRules: {

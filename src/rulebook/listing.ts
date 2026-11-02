@@ -97,11 +97,13 @@ const listing: Listing = {
       summary: 'A TypeScript union is closed: no other module can add a member, and the type checker rejects a value outside it.',
     },
     'banned-syntax': eslint(
-      "no-restricted-syntax bans enums, default and optional parameters, and a class extending anything but JavaScript's own errors.",
+      "no-restricted-syntax bans enums, default and optional parameters, let and var, and a class extending anything but JavaScript's own errors.",
     ),
     'switch-exhaustiveness': eslint(
       '@typescript-eslint/switch-exhaustiveness-check: a switch on a union names every member, and has no default arm once it does, with considerDefaultExhaustiveForUnions and allowDefaultCaseForExhaustiveSwitch off.',
     ),
+    'no-param-reassign': eslint('no-param-reassign: no function assigns to one of its parameters, including from a closure.'),
+    'prefer-readonly': eslint('@typescript-eslint/prefer-readonly: a private field that is never reassigned is declared readonly.'),
     'no-unused-result': { kind: 'custom', summary: 'ESLint rule ts-baseline/no-unused-result: no expression statement drops a Result.' },
     'no-unused-vars': eslint('@typescript-eslint/no-unused-vars: no variable is assigned and never read.'),
     'prettier-check': {
@@ -264,11 +266,26 @@ const listing: Listing = {
     'invariant-types-are-closed': none,
     'closed-types-have-no-way-around-their-factories': none,
     'arguments-are-not-mutated': none,
-    'fields-are-declared-read-only': none,
+    'fields-are-declared-read-only': {
+      coverage: 'partial',
+      checks: ['prefer-readonly'],
+      gap: "Only a private field that is never reassigned is reported: a public or protected field, and a read-only field whose type lets its contents change, such as an array rather than a ReadonlyArray, aren't.",
+      proof: conformance('fields-are-declared-read-only'),
+    },
     'fields-are-assigned-only-at-construction': none,
     'field-collections-are-not-changed': none,
-    'parameters-are-not-reassigned': none,
-    'locals-are-declared-constant': none,
+    'parameters-are-not-reassigned': {
+      coverage: 'full',
+      checks: ['no-param-reassign'],
+      proof: conformance('parameters-are-not-reassigned'),
+      note: null,
+    },
+    'locals-are-declared-constant': {
+      coverage: 'full',
+      checks: ['banned-syntax'],
+      proof: conformance('locals-are-declared-constant'),
+      note: 'let and var are banned outright, so every local is const.',
+    },
     'returned-failures-are-used': {
       coverage: 'partial',
       checks: ['no-unused-result', 'no-unused-vars'],

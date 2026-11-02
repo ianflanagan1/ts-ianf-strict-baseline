@@ -19,6 +19,7 @@ describe('gatherFacts', () => {
       'ESLint: `no-restricted-syntax` no longer bans `TSParameterProperty > AssignmentPattern`; spread `bannedSyntax` into it.',
       'ESLint: `no-restricted-syntax` no longer bans `:matches(:function, TSDeclareFunction, TSMethodSignature, TSFunctionType, TSEmptyBodyFunctionExpression) > Identifier[optional=true]`; spread `bannedSyntax` into it.',
       'ESLint: `no-restricted-syntax` no longer bans `TSPropertySignature[optional=true]`; spread `bannedSyntax` into it.',
+      "ESLint: `no-restricted-syntax` no longer bans `VariableDeclaration[kind='let'], VariableDeclaration[kind='var']`; spread `bannedSyntax` into it.",
       "ESLint: `no-restricted-syntax` no longer bans `:matches(ClassDeclaration, ClassExpression)[superClass]:not([superClass.type='Identifier'][superClass.name=/^(Error|AggregateError|EvalError|RangeError|ReferenceError|SyntaxError|TypeError|URIError)$/])`; spread `bannedSyntax` into it.",
       'Prettier: `printWidth` must be 140, as it is in @ianflanagan1/ts-baseline/prettier.',
       'No devbox.json: pin Node, the package manager and go-task in devbox.',

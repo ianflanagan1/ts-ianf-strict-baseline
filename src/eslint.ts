@@ -57,6 +57,8 @@ export function baseline(tsconfigRootDir: string): Linter.Config[] {
         '@typescript-eslint/array-type': ['error', { default: 'array', readonly: 'generic' }],
         '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true, allowBoolean: true }],
         'no-restricted-syntax': ['error', ...bannedSyntax],
+        // A parameter holds the argument it was given for the whole function.
+        'no-param-reassign': ['error', { props: false }],
         // An underscore marks a name bound only to leave it out, as when a rest pattern drops fields.
         '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_', ignoreRestSiblings: true }],
         // Modified complexity counts a switch once: exhaustive switches over closed families grow with the family, not with risk.

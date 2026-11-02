@@ -18,6 +18,10 @@ export const bannedSyntax: ReadonlyArray<{ readonly selector: string; readonly m
   },
   { selector: 'TSPropertySignature[optional=true]', message: 'Make every property required; use `| null` for an absent value.' },
   {
+    selector: "VariableDeclaration[kind='let'], VariableDeclaration[kind='var']",
+    message: 'Declare every local with const. A value that would change gets a new name, or comes from an expression or a function.',
+  },
+  {
     selector: `:matches(ClassDeclaration, ClassExpression)[superClass]:not([superClass.type='Identifier'][superClass.name=/^(${builtInErrors.join('|')})$/])`,
     message:
       "Don't extend a class: take what it shares as a collaborator in the constructor. Only JavaScript's own errors may be extended.",

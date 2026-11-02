@@ -28,6 +28,8 @@ A module elsewhere under `src/adapters/` has no role, and ESLint reports it. Tes
 
 A driving adapter, such as an HTTP server or a command line, calls an orchestrator directly. A port is an interface an orchestrator declares, which a driven adapter implements, named for what the domain needs from it (`Orders`, `Clock`), not for the vendor or technology behind it (`PostgresOrders`, `RedisCache`). Nothing checks the naming.
 
+Everywhere, `let` and `var` are banned, so every local is `const`, no function reassigns a parameter (`no-param-reassign`), and a private field that is never reassigned is `readonly` (`prefer-readonly`).
+
 ## Use
 
 ```sh
@@ -78,7 +80,7 @@ New projects start from [ts-template](https://github.com/ianflanagan1/ts-templat
 It reads the project's effective config, after `extends` and overrides, rather than its files' text, so it catches a rule turned off three blocks down as well as a missing file:
 
 - the tsconfig turns on every strictness option the base does;
-- the ESLint config applied to a `.ts` file has `no-unused-result`, `switch-exhaustiveness-check` (with `considerDefaultExhaustiveForUnions` and `allowDefaultCaseForExhaustiveSwitch` both `false`), `no-floating-promises`, `only-throw-error`, `no-unnecessary-condition` and every banned syntax as errors;
+- the ESLint config applied to a `.ts` file has `no-unused-result`, `switch-exhaustiveness-check` (with `considerDefaultExhaustiveForUnions` and `allowDefaultCaseForExhaustiveSwitch` both `false`), `no-floating-promises`, `only-throw-error`, `no-unnecessary-condition`, `prefer-readonly`, `no-param-reassign` and every banned syntax as errors;
 - the ESLint config applied to a file in each role has that role's rules as errors: `no-effects` in the core and the orchestrators, `no-configuration` everywhere but the entrypoint, and `max-lines-per-function` in adapters and the entrypoint;
 - Prettier resolves to the same options;
 - the dependency-cruiser config, after `extends`, has `core-is-pure`, `orchestrators-import-no-adapter`, `orchestrators-are-pure`, `driving-adapters-import-no-driven-adapter`, `driven-adapters-import-only-core-and-driven-adapters`, `entrypoint-is-not-imported`, `no-container` and `no-circular` as errors;
