@@ -11,7 +11,7 @@ export default {
       name: 'core-is-pure',
       comment: 'The core does no I/O: no Node built-ins, no libraries, nothing else of ours.',
       severity: 'error',
-      from: { path: '^src/core/' },
+      from: { path: '^src/core/', pathNot: '\\.test\\.tsx?$' },
       to: { pathNot: '^src/core/' },
     },
     // The roles are by path, as in the ESLint baseline: src/core/ is the core, src/adapters/driving/ the driving
