@@ -7,10 +7,20 @@ import { ESLint } from 'eslint';
 import prettier from 'prettier';
 import ts from 'typescript';
 import { parse as parseYaml } from 'yaml';
-import type { BaselineInclude, DevboxFacts, ProjectFacts, RuleSetting, Severity, TaskfileFacts } from './findProblems.ts';
+import type { BaselineInclude, DevboxFacts, ProjectFacts, Role, RoleRules, RuleSetting, Severity, TaskfileFacts } from './findProblems.ts';
 
 // Neither file exists: ESLint and Prettier only match the name against their globs and overrides.
 const probeFile = 'ts-baseline-probe.ts';
+
+// A file in each role, for ESLint to work out the rules that apply there. They needn't exist either.
+// COUPLED:ts-roles. = src/eslint.ts (the paths of each role)
+const roleProbeFiles: Readonly<Record<Role, string>> = {
+  core: 'src/core/ts-baseline-probe.ts',
+  orchestrator: 'src/ts-baseline-probe.ts',
+  'driving-adapter': 'src/adapters/driving/ts-baseline-probe.ts',
+  'driven-adapter': 'src/adapters/driven/ts-baseline-probe.ts',
+  entrypoint: 'src/main.ts',
+};
 
 // The package's own Prettier config, two levels up from both src/verify and dist/verify.
 const expectedPrettierFile = fileURLToPath(new URL('../../prettier.json', import.meta.url));
@@ -45,9 +55,12 @@ export async function gatherFacts(dir: string): Promise<ProjectFacts> {
   const packageJson = await readJson(path.join(dir, 'package.json'));
   const devbox = await readJson(path.join(dir, 'devbox.json'));
   const rootFiles = await readdir(dir);
+  const eslint = new ESLint({ cwd: dir });
+  const hasEslintConfig = (await eslint.findConfigFile()) !== undefined;
   return {
     compilerOptions: compilerOptions(dir),
-    eslintRules: await eslintRules(dir),
+    eslintRules: hasEslintConfig ? await eslintRules(eslint, path.join(dir, probeFile)) : null,
+    eslintRoleRules: hasEslintConfig ? await eslintRoleRules(eslint, dir) : null,
     prettierOptions: await prettier.resolveConfig(path.join(dir, probeFile), { editorconfig: false }),
     expectedPrettierOptions: recordAt(await readJson(expectedPrettierFile), []) ?? {},
     devbox: devbox === null ? null : devboxFacts(devbox),
@@ -153,17 +166,26 @@ function compilerOptions(dir: string): Readonly<Record<string, unknown>> | null 
   return ts.parseJsonConfigFileContent(config, ts.sys, dir).options;
 }
 
-async function eslintRules(dir: string): Promise<Readonly<Record<string, RuleSetting>> | null> {
-  const eslint = new ESLint({ cwd: dir });
-  if ((await eslint.findConfigFile()) === undefined) {
-    return null;
-  }
-  const config: unknown = await eslint.calculateConfigForFile(path.join(dir, probeFile));
+async function eslintRules(eslint: ESLint, file: string): Promise<Readonly<Record<string, RuleSetting>> | null> {
+  const config: unknown = await eslint.calculateConfigForFile(file);
   const rules = recordAt(config, ['rules']);
   if (rules === null) {
     return null;
   }
   return Object.fromEntries(Object.entries(rules).map(([name, entry]) => [name, ruleSetting(entry)]));
+}
+
+// A role whose probe file no config applies to has no rules.
+async function eslintRoleRules(eslint: ESLint, dir: string): Promise<RoleRules> {
+  const rulesFor = async (role: Role): Promise<Readonly<Record<string, RuleSetting>>> =>
+    (await eslintRules(eslint, path.join(dir, roleProbeFiles[role]))) ?? {};
+  return {
+    core: await rulesFor('core'),
+    orchestrator: await rulesFor('orchestrator'),
+    'driving-adapter': await rulesFor('driving-adapter'),
+    'driven-adapter': await rulesFor('driven-adapter'),
+    entrypoint: await rulesFor('entrypoint'),
+  };
 }
 
 // ESLint reports each rule as `[severity, ...options]`, the severity as 0-2 or its name.

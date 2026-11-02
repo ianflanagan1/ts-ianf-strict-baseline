@@ -39,6 +39,25 @@ describe('findProblems', () => {
       .build();
     expect(findProblems(facts)).toEqual([
       'ESLint: `@typescript-eslint/switch-exhaustiveness-check` must set `considerDefaultExhaustiveForUnions: false`.',
+      'ESLint: `@typescript-eslint/switch-exhaustiveness-check` must set `allowDefaultCaseForExhaustiveSwitch: false`.',
+    ]);
+  });
+
+  it("reports a role's rule that a later block turned off", () => {
+    const off = { severity: 'off', options: [] } as const;
+    const error = { severity: 'error', options: [] } as const;
+    const facts = aConformingProject()
+      .withEslintRoleRules({
+        core: { 'ts-baseline/no-effects': off, 'ts-baseline/no-configuration': error },
+        orchestrator: { 'ts-baseline/no-effects': error, 'ts-baseline/no-configuration': error },
+        'driving-adapter': { 'ts-baseline/no-configuration': error, 'max-lines-per-function': error },
+        'driven-adapter': { 'ts-baseline/no-configuration': error, 'max-lines-per-function': error },
+        entrypoint: {},
+      })
+      .build();
+    expect(findProblems(facts)).toEqual([
+      'ESLint: `ts-baseline/no-effects` must be an error in src/core/, as it is in the baseline.',
+      'ESLint: `max-lines-per-function` must be an error in src/main.ts, as it is in the baseline.',
     ]);
   });
 
@@ -146,7 +165,17 @@ describe('findProblems', () => {
   });
 
   it('reports a dependency rule that is weakened or dropped', () => {
-    const facts = aConformingProject().withDependencyCruiserRules({ 'no-circular': 'warn' }).build();
+    const facts = aConformingProject()
+      .withDependencyCruiserRules({
+        'orchestrators-import-no-adapter': 'error',
+        'orchestrators-are-pure': 'error',
+        'driving-adapters-import-no-driven-adapter': 'error',
+        'driven-adapters-import-only-core-and-driven-adapters': 'error',
+        'entrypoint-is-not-imported': 'error',
+        'no-container': 'error',
+        'no-circular': 'warn',
+      })
+      .build();
     expect(findProblems(facts)).toEqual([
       'dependency-cruiser: `core-is-pure` must be an error, as it is in @ianflanagan1/ts-baseline/dependency-cruiser.',
       'dependency-cruiser: `no-circular` must be an error, as it is in @ianflanagan1/ts-baseline/dependency-cruiser.',

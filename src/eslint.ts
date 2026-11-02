@@ -5,9 +5,21 @@ import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import { bannedSyntax } from './bannedSyntax.ts';
+import { noConfiguration } from './noConfiguration.ts';
+import { noEffects } from './noEffects.ts';
 import { noUnusedResult } from './noUnusedResult.ts';
 
 export { bannedSyntax };
+
+// A module's path decides its role. The core is src/core/, driving adapters are src/adapters/driving/, driven
+// adapters are src/adapters/driven/ and the entrypoint is src/main.ts; the rest of src/ are orchestrators. A module
+// elsewhere under src/adapters/ has no role. Tests have no role, and may do anything.
+// COUPLED:ts-roles. = dependency-cruiser.js (the paths of each role), src/verify/gatherFacts.ts (a probe file for each role)
+const sources = ['src/**/*.ts', 'src/**/*.tsx'];
+const tests = ['**/*.test.ts', '**/*.test.tsx'];
+const adapters = ['src/adapters/**'];
+const roledAdapters = ['src/adapters/driving/**', 'src/adapters/driven/**'];
+const entrypoint = ['src/main.ts', 'src/main.tsx'];
 
 // The baseline for a TypeScript project whose tsconfig is in `tsconfigRootDir`. A project adds its own blocks after
 // it, such as ignores and import restrictions for its core.
@@ -27,13 +39,13 @@ export function baseline(tsconfigRootDir: string): Linter.Config[] {
       plugins: {
         // typescript-eslint 8 types rules against ESLint 9's RuleContext, which ESLint 10 changed; the rule runs fine.
         // @ts-expect-error -- remove once typescript-eslint's rule types match ESLint 10.
-        'ts-baseline': { rules: { 'no-unused-result': noUnusedResult } },
+        'ts-baseline': { rules: { 'no-unused-result': noUnusedResult, 'no-effects': noEffects, 'no-configuration': noConfiguration } },
       },
       rules: {
         'ts-baseline/no-unused-result': 'error',
         '@typescript-eslint/switch-exhaustiveness-check': [
           'error',
-          { considerDefaultExhaustiveForUnions: false, requireDefaultForNonUnion: false },
+          { considerDefaultExhaustiveForUnions: false, allowDefaultCaseForExhaustiveSwitch: false, requireDefaultForNonUnion: false },
         ],
         '@typescript-eslint/no-floating-promises': 'error',
         '@typescript-eslint/only-throw-error': 'error',
@@ -51,6 +63,28 @@ export function baseline(tsconfigRootDir: string): Linter.Config[] {
         complexity: ['warn', { max: 10, variant: 'modified' }],
         'max-depth': ['warn', 3],
         'max-params': ['warn', 3],
+      },
+    },
+    // The core and the orchestrators reach the outside only through ports.
+    { files: sources, ignores: [...adapters, ...entrypoint, ...tests], rules: { 'ts-baseline/no-effects': 'error' } },
+    // Only the entrypoint reads configuration, and passes the values in.
+    { files: sources, ignores: [...entrypoint, ...tests], rules: { 'ts-baseline/no-configuration': 'error' } },
+    // Adapters and the entrypoint stay small enough that no decision can hide in them.
+    { files: [...adapters, ...entrypoint], ignores: tests, rules: { 'max-lines-per-function': ['error', { max: 50 }] } },
+    // A module under src/adapters/ that is in neither driving/ nor driven/ has no role.
+    {
+      files: adapters,
+      ignores: [...roledAdapters, ...tests],
+      rules: {
+        'no-restricted-syntax': [
+          'error',
+          ...bannedSyntax,
+          {
+            selector: 'Program',
+            message:
+              'This module has no role: move it to src/adapters/driving/ if it turns calls from outside into calls to orchestrators, or to src/adapters/driven/ if it implements a port.',
+          },
+        ],
       },
     },
     {

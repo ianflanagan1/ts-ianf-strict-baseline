@@ -2,3 +2,4 @@ pnpm-lock.yaml
 devbox.lock
 .devbox/
 dist/
+rulebook-coverage.json

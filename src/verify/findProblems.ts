@@ -21,10 +21,17 @@ export type TaskfileFacts = {
   readonly baselineInclude: BaselineInclude | null;
 };
 
-// What the shell found in a project. A null means the file or config wasn't there at all.
+// The roles the ESLint baseline gives a module, by its path.
+export type Role = 'core' | 'orchestrator' | 'driving-adapter' | 'driven-adapter' | 'entrypoint';
+
+// The ESLint rules that apply to a file in each role, by role.
+export type RoleRules = Readonly<Record<Role, Readonly<Record<string, RuleSetting>>>>;
+
+// What gatherFacts found in a project. A null means the file or config wasn't there at all.
 export type ProjectFacts = {
   readonly compilerOptions: Readonly<Record<string, unknown>> | null;
   readonly eslintRules: Readonly<Record<string, RuleSetting>> | null;
+  readonly eslintRoleRules: RoleRules | null;
   readonly prettierOptions: Readonly<Record<string, unknown>> | null;
   readonly expectedPrettierOptions: Readonly<Record<string, unknown>>;
   readonly devbox: DevboxFacts | null;
@@ -55,6 +62,15 @@ const requiredErrorRules = [
   'no-restricted-syntax',
 ];
 
+// The rules the baseline turns on for each role, and where that role's files are.
+const requiredRoleRules: ReadonlyArray<{ readonly role: Role; readonly where: string; readonly rules: ReadonlyArray<string> }> = [
+  { role: 'core', where: 'src/core/', rules: ['ts-baseline/no-effects', 'ts-baseline/no-configuration'] },
+  { role: 'orchestrator', where: 'the orchestrators, the rest of src/', rules: ['ts-baseline/no-effects', 'ts-baseline/no-configuration'] },
+  { role: 'driving-adapter', where: 'src/adapters/driving/', rules: ['ts-baseline/no-configuration', 'max-lines-per-function'] },
+  { role: 'driven-adapter', where: 'src/adapters/driven/', rules: ['ts-baseline/no-configuration', 'max-lines-per-function'] },
+  { role: 'entrypoint', where: 'src/main.ts', rules: ['max-lines-per-function'] },
+];
+
 const requiredTasks = ['setup', 'check', 'format', 'lint-file'];
 
 // The project's task of each name must run the baseline's, so the commands come from the package.
@@ -62,7 +78,16 @@ const sharedTasks = ['check', 'format', 'lint-file'];
 
 const baselineTaskfile = './node_modules/@ianflanagan1/ts-baseline/Taskfile.baseline.yml';
 
-const requiredDependencyRules = ['core-is-pure', 'no-circular'];
+const requiredDependencyRules = [
+  'core-is-pure',
+  'orchestrators-import-no-adapter',
+  'orchestrators-are-pure',
+  'driving-adapters-import-no-driven-adapter',
+  'driven-adapters-import-only-core-and-driven-adapters',
+  'entrypoint-is-not-imported',
+  'no-container',
+  'no-circular',
+];
 
 const requiredDevDependencies = ['@ianflanagan1/ts-baseline', 'dependency-cruiser', 'knip', 'vitest'];
 
@@ -77,6 +102,7 @@ export function findProblems(facts: ProjectFacts): ReadonlyArray<string> {
   return [
     ...compilerOptionProblems(facts.compilerOptions),
     ...eslintProblems(facts.eslintRules),
+    ...roleProblems(facts.eslintRoleRules),
     ...prettierProblems(facts.prettierOptions, facts.expectedPrettierOptions),
     ...devboxProblems(facts.devbox),
     ...taskfileProblems(facts.taskfile),
@@ -110,10 +136,21 @@ function eslintProblems(rules: Readonly<Record<string, RuleSetting>> | null): Re
 
 function switchProblems(setting: RuleSetting | undefined): ReadonlyArray<string> {
   const options = setting?.options[0];
-  const defaultIsNotExhaustive = isRecord(options) && options.considerDefaultExhaustiveForUnions === false;
-  return defaultIsNotExhaustive
-    ? []
-    : ['ESLint: `@typescript-eslint/switch-exhaustiveness-check` must set `considerDefaultExhaustiveForUnions: false`.'];
+  const required = ['considerDefaultExhaustiveForUnions', 'allowDefaultCaseForExhaustiveSwitch'];
+  return required
+    .filter((name) => !isRecord(options) || options[name] !== false)
+    .map((name) => `ESLint: \`@typescript-eslint/switch-exhaustiveness-check\` must set \`${name}: false\`.`);
+}
+
+function roleProblems(roleRules: RoleRules | null): ReadonlyArray<string> {
+  if (roleRules === null) {
+    return [];
+  }
+  return requiredRoleRules.flatMap(({ role, where, rules }) =>
+    rules
+      .filter((name) => roleRules[role][name]?.severity !== 'error')
+      .map((name) => `ESLint: \`${name}\` must be an error in ${where}, as it is in the baseline.`),
+  );
 }
 
 function bannedSyntaxProblems(setting: RuleSetting | undefined): ReadonlyArray<string> {

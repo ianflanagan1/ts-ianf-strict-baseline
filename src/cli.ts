@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import { findProblems } from './verify/findProblems.ts';
+import { listingJson } from './rulebook/listing.ts';
 import { gatherFacts } from './verify/gatherFacts.ts';
 
-const usage = 'Usage: ts-baseline verify [<project dir>]';
+const usage = 'Usage: ts-baseline verify [<project dir>] | rulebook';
 
 async function run(args: ReadonlyArray<string>): Promise<number> {
   const [command, dir] = args;
+  if (command === 'rulebook' && args.length === 1) {
+    process.stdout.write(listingJson());
+    return 0;
+  }
   if (command !== 'verify' || args.length > 2) {
     console.error(usage);
     return 2;

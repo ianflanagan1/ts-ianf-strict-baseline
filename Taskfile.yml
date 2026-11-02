@@ -22,6 +22,11 @@ tasks:
       - task: build
       - task: baseline:check
 
+  rulebook-coverage:
+    desc: Write rulebook-coverage.json, how ts-baseline enforces the code rulebook
+    cmds:
+      - node src/cli.ts rulebook > rulebook-coverage.json
+
   format:
     desc: Format every file
     cmds:

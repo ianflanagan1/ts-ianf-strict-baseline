@@ -1,0 +1,449 @@
+{
+  "language": "typescript",
+  "baseline": "@ianflanagan1/ts-baseline",
+  "roles": {
+    "core": "Modules under src/core/.",
+    "orchestrator": "Every other module under src/, but tests.",
+    "driving-adapter": "Modules under src/adapters/driving/.",
+    "driven-adapter": "Modules under src/adapters/driven/.",
+    "entrypoint": "src/main.ts."
+  },
+  "checks": {
+    "role-paths": {
+      "kind": "custom",
+      "summary": "The ESLint and dependency-cruiser configs give each module under src/ one role by its path, and verify checks that a file of each role has its role's rules."
+    },
+    "unplaced-adapters": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "no-restricted-syntax reports every module under src/adapters/ that is in neither driving/ nor driven/, which has no role."
+    },
+    "depcruise-core-is-pure": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "core-is-pure: a module under src/core/ imports nothing outside src/core/, including Node built-ins and libraries."
+    },
+    "depcruise-orchestrators-import-no-adapter": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "orchestrators-import-no-adapter: no orchestrator imports a module under src/adapters/."
+    },
+    "depcruise-orchestrators-are-pure": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "orchestrators-are-pure: no orchestrator imports a Node built-in."
+    },
+    "depcruise-driving-adapters": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "driving-adapters-import-no-driven-adapter: no module under src/adapters/driving/ imports one under src/adapters/driven/."
+    },
+    "depcruise-driven-adapters": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "driven-adapters-import-only-core-and-driven-adapters: a module under src/adapters/driven/ imports only the core and other driven adapters."
+    },
+    "depcruise-entrypoint-is-not-imported": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "entrypoint-is-not-imported: no module but a test imports src/main.ts."
+    },
+    "depcruise-no-container": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "no-container: no module imports a dependency-injection container: inversify, tsyringe, typedi, awilix and others."
+    },
+    "depcruise-no-circular": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "no-circular: no module depends on itself through others."
+    },
+    "no-effects": {
+      "kind": "custom",
+      "summary": "ESLint rule ts-baseline/no-effects, in the core and the orchestrators: no global that performs an effect (timers, crypto, fetch, storage, process, console, globalThis), no new Date() or Date.now(), no Math.random(), and no module-level let or var."
+    },
+    "no-configuration": {
+      "kind": "custom",
+      "summary": "ESLint rule ts-baseline/no-configuration, everywhere but src/main.ts and tests: no process.env, process.argv, import.meta.env or parseArgs."
+    },
+    "max-lines-edges": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "max-lines-per-function limits functions in src/adapters/ and src/main.ts to 50 lines."
+    },
+    "complexity": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "complexity is at most 10 everywhere: a warning, which check's --max-warnings 0 makes fail."
+    },
+    "union-types": {
+      "kind": "language",
+      "summary": "A TypeScript union is closed: no other module can add a member, and the type checker rejects a value outside it."
+    },
+    "banned-syntax": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "no-restricted-syntax bans enums, default and optional parameters, and a class extending anything but JavaScript's own errors."
+    },
+    "switch-exhaustiveness": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/switch-exhaustiveness-check: a switch on a union names every member, and has no default arm once it does, with considerDefaultExhaustiveForUnions and allowDefaultCaseForExhaustiveSwitch off."
+    },
+    "no-unused-result": {
+      "kind": "custom",
+      "summary": "ESLint rule ts-baseline/no-unused-result: no expression statement drops a Result."
+    },
+    "no-unused-vars": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/no-unused-vars: no variable is assigned and never read."
+    },
+    "prettier-check": {
+      "kind": "tool",
+      "tool": "prettier",
+      "summary": "The shared check task runs prettier --check, and verify requires a project's check to run the shared one."
+    },
+    "verify-prettier": {
+      "kind": "custom",
+      "summary": "verify reports a Prettier option that differs from @ianflanagan1/ts-baseline/prettier."
+    }
+  },
+  "clauses": {
+    "every-unit-has-one-role": {
+      "coverage": "full",
+      "checks": [
+        "role-paths",
+        "unplaced-adapters"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: every-unit-has-one-role",
+        "src/verify/findProblems.test.ts: reports a role's rule that a later block turned off"
+      ]
+    },
+    "dependency-units-keep-their-role": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-core-is-pure"
+      ],
+      "gap": "A dependency's modules get no role of their own: the core may use no library at all, but an orchestrator may import any library, whatever role its module plays.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-libraries-are-pure"
+      ]
+    },
+    "core-imports-only-core": {
+      "coverage": "full",
+      "checks": [
+        "depcruise-core-is-pure"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-imports-only-core"
+      ]
+    },
+    "core-performs-no-effects": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-core-is-pure",
+        "no-effects"
+      ],
+      "gap": "A module-level const can hold a mutable object, browser globals such as window and document pass, and keeping state that changes across calls in an instance's fields (held-state) isn't detected.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-performs-no-effects",
+        "src/rulebook/conformance.test.ts: core-performs-no-effects misses a mutable const"
+      ]
+    },
+    "core-libraries-are-pure": {
+      "coverage": "full",
+      "checks": [
+        "depcruise-core-is-pure"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-libraries-are-pure"
+      ],
+      "note": "Stricter than the clause: the core may use no library at all."
+    },
+    "core-receives-only-pure-values": {
+      "coverage": "none"
+    },
+    "orchestrator-imports-no-adapter": {
+      "coverage": "full",
+      "checks": [
+        "depcruise-orchestrators-import-no-adapter",
+        "depcruise-entrypoint-is-not-imported"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: orchestrator-imports-no-adapter"
+      ]
+    },
+    "orchestrator-performs-no-effects": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-orchestrators-are-pure",
+        "no-effects"
+      ],
+      "gap": "A module-level const can hold a mutable object, browser globals such as window and document pass, and keeping state that changes across calls in an instance's fields (held-state) isn't detected.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: orchestrator-performs-no-effects"
+      ]
+    },
+    "orchestrator-libraries-are-pure": {
+      "coverage": "none"
+    },
+    "orchestrator-branches-only-on-core-results": {
+      "coverage": "none"
+    },
+    "driving-adapter-imports-only-core-orchestrators-and-driving-adapters": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-driving-adapters",
+        "depcruise-entrypoint-is-not-imported"
+      ],
+      "gap": "A port is declared in the orchestrator's module, which a driving adapter may import, so a driving adapter that takes a port isn't caught.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: driving-adapter-imports-only-core-orchestrators-and-driving-adapters"
+      ]
+    },
+    "driven-adapter-imports-only-core-ports-and-driven-adapters": {
+      "coverage": "full",
+      "checks": [
+        "depcruise-driven-adapters"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: driven-adapter-imports-only-core-ports-and-driven-adapters"
+      ]
+    },
+    "driving-adapter-calls-no-driven-adapter": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-driving-adapters"
+      ],
+      "gap": "A driving adapter that declares an interface and is given a driven adapter through it by src/main.ts is not caught; only importing one is.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: driving-adapter-imports-only-core-orchestrators-and-driving-adapters"
+      ]
+    },
+    "driven-adapter-calls-no-orchestrator": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-driven-adapters"
+      ],
+      "gap": "A driven adapter that declares an interface and is given an orchestrator through it by src/main.ts is not caught; only importing one is.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: driven-adapter-imports-only-core-ports-and-driven-adapters"
+      ]
+    },
+    "adapter-size-is-limited": {
+      "coverage": "full",
+      "checks": [
+        "max-lines-edges",
+        "complexity"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: adapter-size-is-limited"
+      ]
+    },
+    "only-entrypoints-read-configuration": {
+      "coverage": "full",
+      "checks": [
+        "no-configuration"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: only-entrypoints-read-configuration"
+      ]
+    },
+    "entrypoint-size-is-limited": {
+      "coverage": "full",
+      "checks": [
+        "max-lines-edges"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: entrypoint-size-is-limited"
+      ]
+    },
+    "wired-without-a-container": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-no-container"
+      ],
+      "gap": "Only the common container libraries are banned, not a service locator written in the project.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: wired-without-a-container"
+      ]
+    },
+    "entrypoint-calls-only-driving-adapters": {
+      "coverage": "none"
+    },
+    "no-import-cycles": {
+      "coverage": "full",
+      "checks": [
+        "depcruise-no-circular"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: no-import-cycles"
+      ]
+    },
+    "ports-declared-by-their-user": {
+      "coverage": "full",
+      "checks": [
+        "depcruise-orchestrators-import-no-adapter"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: orchestrator-imports-no-adapter"
+      ],
+      "note": "An orchestrator can't import an adapter, so it can't take an interface an adapter declares."
+    },
+    "port-units-follow-typing": {
+      "case": "structural",
+      "coverage": "partial",
+      "checks": [
+        "depcruise-driven-adapters"
+      ],
+      "gap": "A module of interfaces that other orchestrators import is an orchestrator like any other, so a ports module is not caught.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: driven-adapter-imports-only-core-ports-and-driven-adapters"
+      ]
+    },
+    "ports-named-in-domain-terms": {
+      "coverage": "convention",
+      "where": "README.md, Roles"
+    },
+    "applications-are-never-dependencies": {
+      "coverage": "none"
+    },
+    "library-adapters-use-only-the-standard-library": {
+      "coverage": "none"
+    },
+    "closed-families-are-sealed": {
+      "coverage": "partial",
+      "checks": [
+        "union-types",
+        "banned-syntax"
+      ],
+      "gap": "A family modelled as an interface that classes implement is not recognised as one, so any module can add a variant.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: closed-families-are-sealed"
+      ]
+    },
+    "sealed-variants-share-their-unit": {
+      "coverage": "none"
+    },
+    "matches-on-closed-families-are-exhaustive": {
+      "coverage": "full",
+      "checks": [
+        "switch-exhaustiveness"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: matches-on-closed-families-are-exhaustive"
+      ],
+      "note": "Enums are banned, so a closed family is always a union. An if-else chain over one is not checked."
+    },
+    "matches-on-closed-families-have-no-default-arm": {
+      "coverage": "full",
+      "checks": [
+        "switch-exhaustiveness"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: matches-on-closed-families-have-no-default-arm"
+      ],
+      "note": "TypeScript needs no catch-all: it knows a switch that names every member returns."
+    },
+    "open-interfaces-are-not-matched-by-type": {
+      "coverage": "none"
+    },
+    "ports-are-open": {
+      "coverage": "none"
+    },
+    "classes-extend-only-allowed-bases": {
+      "coverage": "full",
+      "checks": [
+        "banned-syntax"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: classes-extend-only-allowed-bases"
+      ],
+      "note": "JavaScript's own errors may be extended, so a thrown error can have a name of its own."
+    },
+    "no-parameter-default-values": {
+      "coverage": "full",
+      "checks": [
+        "banned-syntax"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: no-parameter-default-values"
+      ]
+    },
+    "no-optional-parameters": {
+      "coverage": "full",
+      "checks": [
+        "banned-syntax"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: no-optional-parameters"
+      ]
+    },
+    "constructors-only-store-their-arguments": {
+      "coverage": "none"
+    },
+    "field-initialisers-are-constants": {
+      "coverage": "none"
+    },
+    "invariant-types-are-closed": {
+      "coverage": "none"
+    },
+    "closed-types-have-no-way-around-their-factories": {
+      "coverage": "none"
+    },
+    "arguments-are-not-mutated": {
+      "coverage": "none"
+    },
+    "fields-are-declared-read-only": {
+      "case": "supported",
+      "coverage": "none"
+    },
+    "fields-are-assigned-only-at-construction": {
+      "coverage": "none"
+    },
+    "field-collections-are-not-changed": {
+      "coverage": "none"
+    },
+    "parameters-are-not-reassigned": {
+      "coverage": "none"
+    },
+    "locals-are-declared-constant": {
+      "case": "supported",
+      "coverage": "none"
+    },
+    "returned-failures-are-used": {
+      "coverage": "partial",
+      "checks": [
+        "no-unused-result",
+        "no-unused-vars"
+      ],
+      "gap": "A call that drops a sentinel, such as null, as a statement is not reported.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: returned-failures-are-used",
+        "src/rulebook/conformance.test.ts: returned-failures-are-used misses a dropped sentinel"
+      ]
+    },
+    "check-fails-on-unformatted-files": {
+      "coverage": "full",
+      "checks": [
+        "prettier-check"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: check-fails-on-unformatted-files",
+        "src/verify/findProblems.test.ts: reports a shared task that no longer runs the baseline's own"
+      ],
+      "note": "Prettier does not order imports, so their order is not a matter of formatting here."
+    },
+    "formatter-settings-come-from-the-baseline": {
+      "coverage": "full",
+      "checks": [
+        "verify-prettier"
+      ],
+      "proof": [
+        "src/verify/findProblems.test.ts: reports a Prettier option that differs from the baseline"
+      ]
+    }
+  }
+}
