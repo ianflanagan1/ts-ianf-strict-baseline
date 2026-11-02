@@ -12,7 +12,7 @@ const ruleTester = new RuleTester({
   languageOptions: {
     parserOptions: {
       projectService: true,
-      tsconfigRootDir: path.join(import.meta.dirname, 'fixtures', 'noUnusedResult'),
+      tsconfigRootDir: path.join(import.meta.dirname, '..', '..', 'fixtures', 'noUnusedResult'),
     },
   },
 });

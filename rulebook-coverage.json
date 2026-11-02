@@ -3,7 +3,7 @@
   "baseline": "@ianflanagan1/ts-baseline",
   "roles": {
     "core": "Modules under src/core/.",
-    "orchestrator": "Every other module under src/, but tests.",
+    "orchestrator": "Modules under src/orchestrators/.",
     "driving-adapter": "Modules under src/adapters/driving/.",
     "driven-adapter": "Modules under src/adapters/driven/.",
     "entrypoint": "src/main.ts."
@@ -13,10 +13,10 @@
       "kind": "custom",
       "summary": "The ESLint and dependency-cruiser configs give each module under src/ one role by its path, and verify checks that a file of each role has its role's rules."
     },
-    "unplaced-adapters": {
+    "unplaced-modules": {
       "kind": "tool",
       "tool": "eslint",
-      "summary": "no-restricted-syntax reports every module under src/adapters/ that is in neither driving/ nor driven/, which has no role."
+      "summary": "no-restricted-syntax reports every module under src/ but tests that is in none of the roles' directories, which has no role."
     },
     "depcruise-core-is-pure": {
       "kind": "tool",
@@ -124,11 +124,11 @@
       "coverage": "full",
       "checks": [
         "role-paths",
-        "unplaced-adapters"
+        "unplaced-modules"
       ],
       "proof": [
         "src/rulebook/conformance.test.ts: every-unit-has-one-role",
-        "src/verify/findProblems.test.ts: reports a role's rule that a later block turned off"
+        "src/core/findProblems.test.ts: reports a role's rule that a later block turned off"
       ]
     },
     "dependency-units-keep-their-role": {
@@ -462,7 +462,7 @@
       ],
       "proof": [
         "src/rulebook/conformance.test.ts: check-fails-on-unformatted-files",
-        "src/verify/findProblems.test.ts: reports a shared task that no longer runs the baseline's own"
+        "src/core/findProblems.test.ts: reports a shared task that no longer runs the baseline's own"
       ],
       "note": "Prettier does not order imports, so their order is not a matter of formatting here."
     },
@@ -472,7 +472,7 @@
         "verify-prettier"
       ],
       "proof": [
-        "src/verify/findProblems.test.ts: reports a Prettier option that differs from the baseline"
+        "src/core/findProblems.test.ts: reports a Prettier option that differs from the baseline"
       ]
     }
   }

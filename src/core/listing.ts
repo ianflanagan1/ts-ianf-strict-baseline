@@ -32,7 +32,7 @@ type Listing = {
 
 const conformance = (test: string): ReadonlyArray<string> => [`src/rulebook/conformance.test.ts: ${test}`];
 
-const verify = (test: string): string => `src/verify/findProblems.test.ts: ${test}`;
+const verify = (test: string): string => `src/core/findProblems.test.ts: ${test}`;
 
 const none: Claim = { coverage: 'none' };
 
@@ -48,7 +48,7 @@ const listing: Listing = {
   baseline: '@ianflanagan1/ts-baseline',
   roles: {
     core: 'Modules under src/core/.',
-    orchestrator: 'Every other module under src/, but tests.',
+    orchestrator: 'Modules under src/orchestrators/.',
     'driving-adapter': 'Modules under src/adapters/driving/.',
     'driven-adapter': 'Modules under src/adapters/driven/.',
     entrypoint: 'src/main.ts.',
@@ -59,8 +59,8 @@ const listing: Listing = {
       summary:
         "The ESLint and dependency-cruiser configs give each module under src/ one role by its path, and verify checks that a file of each role has its role's rules.",
     },
-    'unplaced-adapters': eslint(
-      'no-restricted-syntax reports every module under src/adapters/ that is in neither driving/ nor driven/, which has no role.',
+    'unplaced-modules': eslint(
+      "no-restricted-syntax reports every module under src/ but tests that is in none of the roles' directories, which has no role.",
     ),
     'depcruise-core-is-pure': depcruise(
       'core-is-pure: a module under src/core/ imports nothing outside src/core/, including Node built-ins and libraries.',
@@ -119,7 +119,7 @@ const listing: Listing = {
   clauses: {
     'every-unit-has-one-role': {
       coverage: 'full',
-      checks: ['role-paths', 'unplaced-adapters'],
+      checks: ['role-paths', 'unplaced-modules'],
       proof: [...conformance('every-unit-has-one-role'), verify("reports a role's rule that a later block turned off")],
       note: null,
     },

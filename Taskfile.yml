@@ -26,7 +26,7 @@ tasks:
   rulebook-coverage:
     desc: Write rulebook-coverage.json, how ts-baseline enforces the code rulebook
     cmds:
-      - node src/cli.ts rulebook > rulebook-coverage.json
+      - node src/main.ts rulebook > rulebook-coverage.json
 
   rulebook:
     desc: Check rulebook-coverage.json against the release of the code rulebook it is assessed for

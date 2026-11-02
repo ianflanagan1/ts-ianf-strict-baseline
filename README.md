@@ -19,12 +19,12 @@ A module's path decides its role, in both the ESLint and the dependency-cruiser 
 | Role            | Path                    | May import                                                         | May perform effects           |
 | --------------- | ----------------------- | ------------------------------------------------------------------ | ----------------------------- |
 | Core            | `src/core/`             | The core                                                           | None                          |
-| Orchestrator    | The rest of `src/`      | The core, other orchestrators and libraries, but no Node built-ins | None: only through ports      |
+| Orchestrator    | `src/orchestrators/`    | The core, other orchestrators and libraries, but no Node built-ins | None: only through ports      |
 | Driving adapter | `src/adapters/driving/` | Anything but driven adapters and `src/main.ts`                     | All but reading configuration |
 | Driven adapter  | `src/adapters/driven/`  | The core and other driven adapters                                 | All but reading configuration |
 | Entrypoint      | `src/main.ts`           | Anything; nothing imports it                                       | All                           |
 
-A module elsewhere under `src/adapters/` has no role, and ESLint reports it. Tests (`*.test.ts`) have no role, and may do anything. Functions in adapters and the entrypoint are at most 50 lines. Nothing may import a dependency-injection container: `src/main.ts` constructs each adapter and orchestrator, passes them in and starts a driving adapter.
+A module under `src/` in none of these directories has no role, and ESLint reports it. Tests (`*.test.ts`) have no role, and may do anything. Functions in adapters and the entrypoint are at most 50 lines. Nothing may import a dependency-injection container: `src/main.ts` constructs each adapter and orchestrator, passes them in and starts a driving adapter.
 
 A driving adapter, such as an HTTP server or a command line, calls an orchestrator directly. A port is an interface an orchestrator declares, which a driven adapter implements, named for what the domain needs from it (`Orders`, `Clock`), not for the vendor or technology behind it (`PostgresOrders`, `RedisCache`). Nothing checks the naming.
 
@@ -105,7 +105,7 @@ On everywhere but the entrypoint and tests. Reports `process.env`, `process.argv
 
 ## The code rulebook
 
-The [code rulebook](https://github.com/ianflanagan1/code-rulebook) states the rules every language shares, split into clauses. `src/rulebook/listing.ts` records which of the baseline's checks enforce each clause and the tests that prove it. `rulebook-coverage.json` holds that listing, and a test fails when the file is out of date or names a test that doesn't exist. The `rulebook` task, which `check` runs, checks the listing with `check-listing` from the code-rulebook release `RULEBOOK_RELEASE` pins: it fails on a clause that applies to TypeScript and isn't assessed, a role that isn't mapped, or a claim of full or partial coverage without proof. It runs through Go, which devbox pins for that alone.
+The [code rulebook](https://github.com/ianflanagan1/code-rulebook) states the rules every language shares, split into clauses. `src/core/listing.ts` records which of the baseline's checks enforce each clause and the tests that prove it. `rulebook-coverage.json` holds that listing, and a test fails when the file is out of date or names a test that doesn't exist. The `rulebook` task, which `check` runs, checks the listing with `check-listing` from the code-rulebook release `RULEBOOK_RELEASE` pins: it fails on a clause that applies to TypeScript and isn't assessed, a role that isn't mapped, or a claim of full or partial coverage without proof. It runs through Go, which devbox pins for that alone.
 
 code-rulebook is a private repository, so the task needs Git access to it. Locally, have Git fetch it over SSH: `git config --global url."git@github.com:ianflanagan1/code-rulebook".insteadOf "https://github.com/ianflanagan1/code-rulebook"`. In CI, give the job a token that can read it.
 
@@ -115,7 +115,7 @@ When a check changes what it enforces, or the baseline moves to a new rulebook r
 
 1. Bump `RULEBOOK_RELEASE` in `Taskfile.yml`, if moving.
 2. Assess each clause the `rulebook` task reports. Where an existing check reaches, add the violation to `src/fixtures/conformance` and a test named for its clause. Where catching it needs a check the baseline doesn't have, such as a new ESLint rule, record the coverage the existing checks give and write down what the missing check must do; it is built separately.
-3. Update the claim in `src/rulebook/listing.ts`.
+3. Update the claim in `src/core/listing.ts`.
 4. `devbox run -- task rulebook-coverage`, then `check`.
 
 ## Development
@@ -125,6 +125,6 @@ devbox run -- task setup
 devbox run -- task check   # build, then the shared check: formatting, types, lint, dependency rules, knip, verify on itself, tests
 ```
 
-The package includes its own `Taskfile.baseline.yml` and extends its own `dependency-cruiser.js`, as a project does through `node_modules`. Its own configs give `src/cli.ts` the entrypoint's rules and `src/verify/gatherFacts.ts` a driven adapter's. dependency-cruiser loads `extends` by path rather than through package exports, which is why that file sits at the package root. The code follows the baseline it ships: `src/verify/findProblems.ts` decides from plain values, and `src/verify/gatherFacts.ts` reads the project through ESLint's, TypeScript's and Prettier's own config resolution.
+The package includes its own `Taskfile.baseline.yml` and extends its own `dependency-cruiser.js`, as a project does through `node_modules`. Its code sits in the roles' directories, as a project's does, so its own configs add nothing to the baseline's. dependency-cruiser loads `extends` by path rather than through package exports, which is why that file sits at the package root. `src/core/findProblems.ts` decides from plain values; `src/orchestrators/verify.ts` gathers a project's facts through a port and asks the core; `src/adapters/driven/gatherFacts.ts` reads the project through ESLint's, TypeScript's and Prettier's own config resolution; `src/adapters/driving/` holds the ESLint config, its rules and the command line; and `src/main.ts` wires them together.
 
 Release with `github release . <patch|minor|major>` ([repo-tools](https://github.com/ianflanagan1/repo-tools)): `.github/workflows/publish.yml` publishes the tag's version to npm through the `publish` task, with provenance and no token. The first version, and npm's trust in the workflow, come from `npmjs publish .`. `prepack` builds `dist/` before each publish.

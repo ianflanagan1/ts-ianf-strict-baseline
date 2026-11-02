@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { bannedSyntax } from '../bannedSyntax.ts';
-import { aConformingProject } from '../testing/aProject.ts';
+import { bannedSyntax } from './bannedSyntax.ts';
+import { aConformingProject } from './testing/aProject.ts';
 import { findProblems } from './findProblems.ts';
 
 describe('findProblems', () => {

@@ -1,4 +1,4 @@
-import { bannedSyntax } from '../bannedSyntax.ts';
+import { bannedSyntax } from './bannedSyntax.ts';
 
 export type Severity = 'off' | 'warn' | 'error';
 
@@ -67,7 +67,7 @@ const requiredErrorRules = [
 // The rules the baseline turns on for each role, and where that role's files are.
 const requiredRoleRules: ReadonlyArray<{ readonly role: Role; readonly where: string; readonly rules: ReadonlyArray<string> }> = [
   { role: 'core', where: 'src/core/', rules: ['ts-baseline/no-effects', 'ts-baseline/no-configuration'] },
-  { role: 'orchestrator', where: 'the orchestrators, the rest of src/', rules: ['ts-baseline/no-effects', 'ts-baseline/no-configuration'] },
+  { role: 'orchestrator', where: 'src/orchestrators/', rules: ['ts-baseline/no-effects', 'ts-baseline/no-configuration'] },
   { role: 'driving-adapter', where: 'src/adapters/driving/', rules: ['ts-baseline/no-configuration', 'max-lines-per-function'] },
   { role: 'driven-adapter', where: 'src/adapters/driven/', rules: ['ts-baseline/no-configuration', 'max-lines-per-function'] },
   { role: 'entrypoint', where: 'src/main.ts', rules: ['max-lines-per-function'] },

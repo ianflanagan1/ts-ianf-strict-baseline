@@ -12,7 +12,7 @@ tasks:
       - pnpm exec eslint --max-warnings 0 .
       - pnpm exec depcruise src --config
       - pnpm exec knip
-      - node {{shellQuote .TASKFILE_DIR}}/dist/cli.js verify
+      - node {{shellQuote .TASKFILE_DIR}}/dist/main.js verify
       - pnpm exec vitest run
 
   format:

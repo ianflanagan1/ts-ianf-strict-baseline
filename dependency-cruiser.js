@@ -14,22 +14,22 @@ export default {
       from: { path: '^src/core/', pathNot: '\\.test\\.tsx?$' },
       to: { pathNot: '^src/core/' },
     },
-    // The roles are by path, as in the ESLint baseline: src/core/ is the core, src/adapters/driving/ the driving
-    // adapters, src/adapters/driven/ the driven adapters, src/main.ts the entrypoint and the rest of src/ the
-    // orchestrators. Tests have no role.
-    // COUPLED:ts-roles. = src/eslint.ts (the paths of each role)
+    // The roles are by path, as in the ESLint baseline: src/core/ is the core, src/orchestrators/ the orchestrators,
+    // src/adapters/driving/ the driving adapters, src/adapters/driven/ the driven adapters and src/main.ts the
+    // entrypoint. Tests have no role, and ESLint reports any other module.
+    // COUPLED:ts-roles. = src/adapters/driving/eslint.ts (the paths of each role)
     {
       name: 'orchestrators-import-no-adapter',
       comment: 'An orchestrator takes driven adapters through the ports it declares; src/main.ts passes them in.',
       severity: 'error',
-      from: { path: '^src/', pathNot: ['^src/(core|adapters)/', '^src/main\\.tsx?$', '\\.test\\.tsx?$'] },
+      from: { path: '^src/orchestrators/', pathNot: '\\.test\\.tsx?$' },
       to: { path: '^src/adapters/' },
     },
     {
       name: 'orchestrators-are-pure',
       comment: 'An orchestrator does no I/O itself: no Node built-ins. It reaches the outside through ports.',
       severity: 'error',
-      from: { path: '^src/', pathNot: ['^src/(core|adapters)/', '^src/main\\.tsx?$', '\\.test\\.tsx?$'] },
+      from: { path: '^src/orchestrators/', pathNot: '\\.test\\.tsx?$' },
       to: { dependencyTypes: ['core'] },
     },
     {

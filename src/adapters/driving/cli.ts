@@ -1,12 +1,11 @@
-#!/usr/bin/env node
 import path from 'node:path';
-import { findProblems } from './verify/findProblems.ts';
-import { listingJson } from './rulebook/listing.ts';
-import { gatherFacts } from './verify/gatherFacts.ts';
+import { listingJson } from '../../core/listing.ts';
+import { verify, type Project } from '../../orchestrators/verify.ts';
 
 const usage = 'Usage: ts-baseline verify [<project dir>] | rulebook';
 
-async function run(args: ReadonlyArray<string>): Promise<number> {
+// Runs the command `args` names, writing its output, and returns the exit code.
+export async function run(args: ReadonlyArray<string>, project: Project): Promise<number> {
   const [command, dir] = args;
   if (command === 'rulebook' && args.length === 1) {
     process.stdout.write(listingJson());
@@ -17,7 +16,7 @@ async function run(args: ReadonlyArray<string>): Promise<number> {
     return 2;
   }
   const root = path.resolve(dir ?? '.');
-  const problems = findProblems(await gatherFacts(root));
+  const problems = await verify(project, root);
   if (problems.length === 0) {
     console.log(`ts-baseline: ${root} follows the baseline.`);
     return 0;
@@ -25,14 +24,3 @@ async function run(args: ReadonlyArray<string>): Promise<number> {
   console.error(`ts-baseline: ${root} departs from the baseline:\n${problems.map((problem) => `  - ${problem}`).join('\n')}`);
   return 1;
 }
-
-async function main(): Promise<void> {
-  try {
-    process.exitCode = await run(process.argv.slice(2));
-  } catch (error: unknown) {
-    console.error(error);
-    process.exitCode = 1;
-  }
-}
-
-await main();

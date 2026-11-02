@@ -5,7 +5,7 @@ import prettier from 'prettier';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import baseline from '../../dependency-cruiser.js';
-import { baseline as eslintBaseline } from '../eslint.ts';
+import { baseline as eslintBaseline } from '../adapters/driving/eslint.ts';
 
 // Each test is named for the rulebook clause it proves, and src/fixtures/conformance has a module for each
 // violation the clause describes. dependency-cruiser and ESLint run over it with this package's configs.
@@ -71,6 +71,7 @@ describe('conformance', () => {
     expect(reported('ts-baseline/no-configuration', 'main')).toBe(0);
     expect(reported('max-lines-per-function', 'core/pure')).toBe(0);
     expect(reported('no-restricted-syntax', 'adapters/unplaced')).toBe(1);
+    expect(reported('no-restricted-syntax', 'app/stray')).toBe(1);
     expect(reported('no-restricted-syntax', 'adapters/driven/clock')).toBe(0);
     expect(reported('no-restricted-syntax', 'adapters/driving/server')).toBe(0);
   });
@@ -121,11 +122,11 @@ describe('conformance', () => {
   });
 
   it('no-import-cycles', () => {
-    expect(from('no-circular', 'cycle/a')).toEqual(['src/cycle/b.ts']);
+    expect(from('no-circular', 'core/cycle/a')).toEqual(['src/core/cycle/b.ts']);
   });
 
   it('closed-families-are-sealed', () => {
-    const file = path.join(fixture, 'src', 'design', 'outsideTheUnion.ts');
+    const file = path.join(fixture, 'src', 'core', 'design', 'outsideTheUnion.ts');
     const program = ts.createProgram([file], {
       strict: true,
       noEmit: true,
@@ -134,58 +135,58 @@ describe('conformance', () => {
     });
     const errors = ts.getPreEmitDiagnostics(program).map((d) => d.code);
     expect(errors).toContain(2322);
-    expect(reported('no-restricted-syntax', 'design/anEnum')).toBe(1);
+    expect(reported('no-restricted-syntax', 'core/design/anEnum')).toBe(1);
   });
 
   it('matches-on-closed-families-are-exhaustive', () => {
-    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'design/missingCase')).toBe(1);
-    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'design/exhaustive')).toBe(0);
+    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'core/design/missingCase')).toBe(1);
+    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'core/design/exhaustive')).toBe(0);
   });
 
   it('matches-on-closed-families-have-no-default-arm', () => {
-    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'design/defaultForTheRest')).toBe(1);
-    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'design/defaultWithEveryCase')).toBe(1);
+    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'core/design/defaultForTheRest')).toBe(1);
+    expect(reported('@typescript-eslint/switch-exhaustiveness-check', 'core/design/defaultWithEveryCase')).toBe(1);
   });
 
   it('classes-extend-only-allowed-bases', () => {
-    expect(reported('no-restricted-syntax', 'design/extendsProjectClass')).toBe(1);
-    expect(reported('no-restricted-syntax', 'design/extendsAbstractClass')).toBe(1);
-    expect(reported('no-restricted-syntax', 'design/extendsLibraryClass')).toBe(1);
-    expect(lint.get('src/design/extendsError.ts')).toEqual([]);
+    expect(reported('no-restricted-syntax', 'core/design/extendsProjectClass')).toBe(1);
+    expect(reported('no-restricted-syntax', 'core/design/extendsAbstractClass')).toBe(1);
+    expect(reported('no-restricted-syntax', 'core/design/extendsLibraryClass')).toBe(1);
+    expect(lint.get('src/core/design/extendsError.ts')).toEqual([]);
   });
 
   it('no-parameter-default-values', () => {
-    expect(reported('no-restricted-syntax', 'design/defaults')).toBe(3);
+    expect(reported('no-restricted-syntax', 'core/design/defaults')).toBe(3);
   });
 
   it('no-optional-parameters', () => {
-    expect(reported('no-restricted-syntax', 'design/optional')).toBe(1);
+    expect(reported('no-restricted-syntax', 'core/design/optional')).toBe(1);
   });
 
   it('parameters-are-not-reassigned', () => {
     for (const module of ['assignedParameter', 'compoundParameter', 'incrementedParameter', 'defaultedParameter', 'closureParameter']) {
-      expect(reported('no-param-reassign', `design/${module}`), module).toBe(1);
+      expect(reported('no-param-reassign', `core/design/${module}`), module).toBe(1);
     }
   });
 
   it('locals-are-declared-constant', () => {
     for (const module of ['reassignedLocal', 'neverReassignedLet', 'varLocal', 'assignedInBranches', 'assignedInTry', 'suiteState']) {
-      expect(reported('no-restricted-syntax', `design/${module}`), module).toBe(1);
+      expect(reported('no-restricted-syntax', `core/design/${module}`), module).toBe(1);
     }
-    expect(reported('no-restricted-syntax', 'design/loopCounter')).toBe(2);
+    expect(reported('no-restricted-syntax', 'core/design/loopCounter')).toBe(2);
   });
 
   it('fields-are-declared-read-only', () => {
-    expect(reported('@typescript-eslint/prefer-readonly', 'design/mutableField')).toBe(1);
+    expect(reported('@typescript-eslint/prefer-readonly', 'core/design/mutableField')).toBe(1);
   });
 
   it('returned-failures-are-used', () => {
-    expect(reported('ts-baseline/no-unused-result', 'design/dropsResult')).toBe(1);
-    expect(reported('@typescript-eslint/no-unused-vars', 'design/dropsResult')).toBe(1);
+    expect(reported('ts-baseline/no-unused-result', 'core/design/dropsResult')).toBe(1);
+    expect(reported('@typescript-eslint/no-unused-vars', 'core/design/dropsResult')).toBe(1);
   });
 
   it('returned-failures-are-used misses a dropped sentinel', () => {
-    expect(lint.get('src/design/dropsSentinel.ts')).toEqual([]);
+    expect(lint.get('src/core/design/dropsSentinel.ts')).toEqual([]);
   });
 
   it('check-fails-on-unformatted-files', async () => {

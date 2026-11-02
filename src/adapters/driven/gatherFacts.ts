@@ -7,26 +7,35 @@ import { ESLint } from 'eslint';
 import prettier from 'prettier';
 import ts from 'typescript';
 import { parse as parseYaml } from 'yaml';
-import type { BaselineInclude, DevboxFacts, ProjectFacts, Role, RoleRules, RuleSetting, Severity, TaskfileFacts } from './findProblems.ts';
+import type {
+  BaselineInclude,
+  DevboxFacts,
+  ProjectFacts,
+  Role,
+  RoleRules,
+  RuleSetting,
+  Severity,
+  TaskfileFacts,
+} from '../../core/findProblems.ts';
 
 // Neither file exists: ESLint and Prettier only match the name against their globs and overrides.
 const probeFile = 'ts-baseline-probe.ts';
 
 // A file in each role, for ESLint to work out the rules that apply there. They needn't exist either.
-// COUPLED:ts-roles. = src/eslint.ts (the paths of each role)
+// COUPLED:ts-roles. = src/adapters/driving/eslint.ts (the paths of each role)
 const roleProbeFiles: Readonly<Record<Role, string>> = {
   core: 'src/core/ts-baseline-probe.ts',
-  orchestrator: 'src/ts-baseline-probe.ts',
+  orchestrator: 'src/orchestrators/ts-baseline-probe.ts',
   'driving-adapter': 'src/adapters/driving/ts-baseline-probe.ts',
   'driven-adapter': 'src/adapters/driven/ts-baseline-probe.ts',
   entrypoint: 'src/main.ts',
 };
 
-// The package's own Prettier config, two levels up from both src/verify and dist/verify.
-const expectedPrettierFile = fileURLToPath(new URL('../../prettier.json', import.meta.url));
+// The package's own Prettier config, three levels up from both src/adapters/driven and dist/adapters/driven.
+const expectedPrettierFile = fileURLToPath(new URL('../../../prettier.json', import.meta.url));
 
 // The package's own Taskfile of shared tasks, beside the Prettier config.
-const baselineTaskfileFile = fileURLToPath(new URL('../../Taskfile.baseline.yml', import.meta.url));
+const baselineTaskfileFile = fileURLToPath(new URL('../../../Taskfile.baseline.yml', import.meta.url));
 
 // The names dependency-cruiser looks for, in its order.
 const dependencyCruiserConfigNames = [

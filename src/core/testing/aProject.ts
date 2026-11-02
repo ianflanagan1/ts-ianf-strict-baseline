@@ -1,5 +1,5 @@
 import { bannedSyntax } from '../bannedSyntax.ts';
-import type { BaselineInclude, ProjectFacts, RuleSetting, TaskfileFacts } from '../verify/findProblems.ts';
+import type { BaselineInclude, ProjectFacts, RuleSetting, TaskfileFacts } from '../findProblems.ts';
 
 const error = (...options: ReadonlyArray<unknown>): RuleSetting => ({ severity: 'error', options });
 

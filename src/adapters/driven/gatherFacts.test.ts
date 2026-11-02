@@ -1,9 +1,9 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findProblems } from './findProblems.ts';
+import { findProblems } from '../../core/findProblems.ts';
 import { gatherFacts } from './gatherFacts.ts';
 
-const fixture = (name: string): string => path.join(import.meta.dirname, '..', 'fixtures', name);
+const fixture = (name: string): string => path.join(import.meta.dirname, '..', '..', 'fixtures', name);
 
 describe('gatherFacts', () => {
   it('reads a project that uses the baseline as one with no problems', async () => {

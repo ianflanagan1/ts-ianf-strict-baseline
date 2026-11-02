@@ -23,15 +23,15 @@
   },
   "exports": {
     "./eslint": {
-      "types": "./dist/eslint.d.ts",
-      "default": "./dist/eslint.js"
+      "types": "./dist/adapters/driving/eslint.d.ts",
+      "default": "./dist/adapters/driving/eslint.js"
     },
     "./tsconfig.json": "./tsconfig.base.json",
     "./prettier": "./prettier.json",
     "./dependency-cruiser": "./dependency-cruiser.js"
   },
   "bin": {
-    "ts-baseline": "./dist/cli.js"
+    "ts-baseline": "./dist/main.js"
   },
   "files": [
     "dist",
