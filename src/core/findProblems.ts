@@ -120,8 +120,7 @@ const requiredRootFiles: ReadonlyArray<{ readonly what: string; readonly anyOf: 
 ];
 
 // The .gitignore line for the directory every project's tools keep their caches in.
-// COUPLED:tool-cache-dir:[=; //github.com/ianflanagan1/code-rulebook/rulebook/setups/ianf-strict/rules/project/tool-caches-are-ignored.yaml; //github.com/ianflanagan1/code-rulebook/rulebook/setups/ianf-strict/baselines.md;
-// //github.com/ianflanagan1/go-ianf-strict-baseline/internal/core/baseline/baseline.go; //github.com/ianflanagan1/php-ianf-strict-baseline/src/Core/ProjectProblems.php]
+// COUPLED:tool-cache-dir: find-problems
 const cacheIgnore = '/cache/';
 
 // Every way the project falls short of the baseline, each phrased as what to change.

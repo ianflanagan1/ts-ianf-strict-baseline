@@ -16,7 +16,7 @@ export { bannedSyntax };
 // are src/adapters/driving/, driven adapters are src/adapters/driven/ and the entrypoint is src/main.ts. Fakes are
 // src/fakes/, and test code a project ships for the tests of projects that depend on it is src/testing/. Any other
 // module under src/ has no role, and is reported. Tests have no role, and may do anything.
-// COUPLED:ts-roles:[same-shape] the paths of each role, and a probe file for each
+// COUPLED:ts-roles: eslint. The paths of each role, and a probe file for each
 const sources = ['src/**/*.ts', 'src/**/*.tsx'];
 const tests = ['**/*.test.ts', '**/*.test.tsx'];
 const core = ['src/core/**'];

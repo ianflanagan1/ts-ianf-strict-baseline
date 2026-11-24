@@ -22,7 +22,7 @@ import type {
 const probeFile = 'ts-ianf-strict-baseline-probe.ts';
 
 // A file in each role, for ESLint to work out the rules that apply there. They needn't exist either.
-// COUPLED:ts-roles:[same-shape] a probe file for each role
+// COUPLED:ts-roles: gather-facts. A probe file for each role
 const roleProbeFiles: Readonly<Record<Role, string>> = {
   core: 'src/core/ts-ianf-strict-baseline-probe.ts',
   orchestrator: 'src/orchestrators/ts-ianf-strict-baseline-probe.ts',

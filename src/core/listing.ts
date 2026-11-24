@@ -1,9 +1,7 @@
 // How ts-ianf-strict-baseline enforces each clause of the code rulebook (github.com/ianflanagan1/code-rulebook), as
 // the coverage listing the rulebook checks. rulebook-coverage.json holds it, written by `ts-ianf-strict-baseline rulebook`.
 
-// COUPLED:coverage-listing-schema:[same-shape; //github.com/ianflanagan1/code-rulebook/schema/coverage.schema.json; //github.com/ianflanagan1/code-rulebook/internal/core/rulebook/model.go;
-// //github.com/ianflanagan1/go-ianf-strict-baseline/internal/core/rulebook/rulebook.go;
-// //github.com/ianflanagan1/php-ianf-strict-baseline/src/Core/RulebookListing.php] fields, check kinds and coverage levels
+// COUPLED:coverage-listing-schema: listing. Fields, check kinds and coverage levels
 type Check =
   | { readonly kind: 'language' | 'custom'; readonly 'on-finding': OnFinding; readonly summary: string }
   | { readonly kind: 'tool'; readonly tool: string; readonly 'on-finding': OnFinding; readonly summary: string };

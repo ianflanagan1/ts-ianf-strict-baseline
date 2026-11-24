@@ -1,0 +1,30 @@
+version = 1
+
+["COUPLED:coverage-listing-schema:"]
+relations = ["same-shape"]
+files = ["//github.com/ianflanagan1/code-rulebook/schema/coverage.schema.json", "//github.com/ianflanagan1/code-rulebook/internal/core/rulebook/model.go", "//github.com/ianflanagan1/go-ianf-strict-baseline/internal/core/rulebook/rulebook.go", "//github.com/ianflanagan1/php-ianf-strict-baseline/src/Core/RulebookListing.php"]
+why = "code-rulebook checks each baseline's rulebook-coverage.json against its coverage schema and reads it with its Go model, so the listing every baseline writes must have the schema's fields"
+
+["COUPLED:tool-cache-dir:"]
+relations = ["="]
+files = ["//github.com/ianflanagan1/code-rulebook/rulebook/setups/ianf-strict/rules/project/tool-caches-are-ignored.yaml", "//github.com/ianflanagan1/code-rulebook/rulebook/setups/ianf-strict/baselines.md", "//github.com/ianflanagan1/go-ianf-strict-baseline/internal/core/baseline/baseline.go", "//github.com/ianflanagan1/php-ianf-strict-baseline/src/Core/ProjectProblems.php"]
+
+["COUPLED:ts-roles:"]
+relations = ["same-shape"]
+why = "ESLint and dependency-cruiser must find each role at the same paths, and gatherFacts needs a probe file at each of them"
+
+# Written by coupled --update: each group as it was last reviewed. Don't edit below this line.
+
+[reviewed."COUPLED:coverage-listing-schema:"]
+definition = "728a2b7f4c370fec"
+"COUPLED:coverage-listing-schema: listing" = { block = "5307bad15c69ac96" }
+
+[reviewed."COUPLED:tool-cache-dir:"]
+definition = "a4e87f9c6e3adc93"
+"COUPLED:tool-cache-dir: find-problems" = {}
+
+[reviewed."COUPLED:ts-roles:"]
+definition = "8da08fc607fb0e53"
+"COUPLED:ts-roles: dependency-cruiser" = { block = "dc6eb84cfb53b2ac" }
+"COUPLED:ts-roles: eslint" = { block = "28b206e14fd03caa" }
+"COUPLED:ts-roles: gather-facts" = { block = "56f2fd6c0a18b754" }

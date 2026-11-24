@@ -20,7 +20,7 @@ export default {
     // entrypoint. Two more directories hold code no program runs, which a project ships so that the tests of projects
     // depending on it can import it: src/fakes/ the fakes, and src/testing/ test code such as an assertion or a test
     // data builder. Tests have no role, and ESLint reports any other module.
-    // COUPLED:ts-roles:[same-shape] the paths of each role
+    // COUPLED:ts-roles: dependency-cruiser. The paths of each role
     {
       name: 'orchestrators-import-no-adapter',
       comment: 'An orchestrator takes driven adapters through the ports it declares; src/main.ts passes them in.',
