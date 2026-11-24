@@ -9,15 +9,18 @@ export default {
   forbidden: [
     {
       name: 'core-is-pure',
-      comment: 'The core does no I/O: no Node built-ins, no libraries, nothing else of ours.',
+      comment:
+        "The core imports none of the project's own code outside src/core/. What it imports from packages and host modules is judged by what that code does, by the ESLint rule ts-ianf-strict-baseline/imports-reach-nothing-impure, and not here by where it lives.",
       severity: 'error',
       from: { path: '^src/core/', pathNot: '\\.test\\.tsx?$' },
-      to: { pathNot: '^src/core/' },
+      to: { pathNot: ['^src/core/', '(^|/)node_modules/'], dependencyTypesNot: ['core', 'unknown', 'undetermined'] },
     },
     // The roles are by path, as in the ESLint baseline: src/core/ is the core, src/orchestrators/ the orchestrators,
     // src/adapters/driving/ the driving adapters, src/adapters/driven/ the driven adapters and src/main.ts the
-    // entrypoint. Tests have no role, and ESLint reports any other module.
-    // COUPLED:ts-roles. = src/adapters/driving/eslint.ts (the paths of each role)
+    // entrypoint. Two more directories hold code no program runs, which a project ships so that the tests of projects
+    // depending on it can import it: src/fakes/ the fakes, and src/testing/ test code such as an assertion or a test
+    // data builder. Tests have no role, and ESLint reports any other module.
+    // COUPLED:ts-roles:[same-shape] the paths of each role
     {
       name: 'orchestrators-import-no-adapter',
       comment: 'An orchestrator takes driven adapters through the ports it declares; src/main.ts passes them in.',
@@ -53,6 +56,28 @@ export default {
       from: { pathNot: '\\.test\\.tsx?$' },
       to: { path: '^src/main\\.tsx?$' },
     },
+    {
+      name: 'only-tests-import-fakes-and-test-code',
+      comment: 'No program runs a fake or shipped test code: only tests, and the two directories themselves, import them.',
+      severity: 'error',
+      from: { path: '^src/', pathNot: '^src/(fakes|testing)/|\\.test\\.tsx?$' },
+      to: { path: '^src/(fakes|testing)/' },
+    },
+    {
+      name: 'fakes-import-only-core-orchestrators-and-fakes',
+      comment: 'A fake uses the core, the ports its orchestrators declare and other fakes, never an adapter or test code.',
+      severity: 'error',
+      from: { path: '^src/fakes/', pathNot: '\\.test\\.tsx?$' },
+      to: { path: '^src/', pathNot: '^src/(core|orchestrators|fakes)/' },
+    },
+    {
+      name: 'test-code-imports-no-adapter',
+      comment: 'Shipped test code uses the core, ports and fakes; a test that needs an adapter builds it itself.',
+      severity: 'error',
+      from: { path: '^src/testing/', pathNot: '\\.test\\.tsx?$' },
+      to: { path: '^src/adapters/' },
+    },
+    // COUPLED:ts-roles:END
     {
       name: 'no-container',
       comment: 'src/main.ts constructs each adapter and orchestrator and passes it in, with no dependency-injection container.',

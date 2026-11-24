@@ -2,14 +2,15 @@ version: '3'
 
 # The tasks every project shares. A project includes this file as `baseline`, with `optional: true` so its own
 # `setup` can install it, and has its own check, format and lint-file run these. They run in the project root.
+# Prettier, tsc and ESLint keep their caches under cache/, which ts-ianf-strict-baseline verify checks .gitignore ignores.
 
 tasks:
   check:
-    desc: Formatting, types, lint, dependency rules, knip, ts-baseline verify and tests
+    desc: Formatting, types, lint, dependency rules, knip, ts-ianf-strict-baseline verify and tests
     cmds:
-      - pnpm exec prettier --check .
-      - pnpm exec tsc --project .
-      - pnpm exec eslint --max-warnings 0 .
+      - pnpm exec prettier --check --cache --cache-location cache/prettier/cache.json .
+      - pnpm exec tsc --project . --incremental --tsBuildInfoFile cache/tsc/tsconfig.tsbuildinfo
+      - pnpm exec eslint --cache --cache-location cache/eslint/ --max-warnings 0 .
       - pnpm exec depcruise src --config
       - pnpm exec knip
       - node {{shellQuote .TASKFILE_DIR}}/dist/main.js verify
@@ -18,12 +19,12 @@ tasks:
   format:
     desc: Format every file
     cmds:
-      - pnpm exec prettier --write .
+      - pnpm exec prettier --write --cache --cache-location cache/prettier/cache.json .
 
   lint-file:
     desc: Format, fix and lint the files given after --
     vars:
       FILES: '{{range .CLI_ARGS_LIST}}{{shellQuote .}} {{end}}'
     cmds:
-      - pnpm exec prettier --write --ignore-unknown --log-level warn {{.FILES}}
-      - pnpm exec eslint --fix --max-warnings 0 --no-warn-ignored {{.FILES}}
+      - pnpm exec prettier --write --cache --cache-location cache/prettier/cache.json --ignore-unknown --log-level warn {{.FILES}}
+      - pnpm exec eslint --cache --cache-location cache/eslint/ --fix --max-warnings 0 --no-warn-ignored {{.FILES}}

@@ -1,5 +1,5 @@
-import { bannedSyntax } from '../bannedSyntax.ts';
-import type { BaselineInclude, ProjectFacts, RuleSetting, TaskfileFacts } from '../findProblems.ts';
+import { bannedSyntax } from '../core/bannedSyntax.ts';
+import type { BaselineInclude, ProjectFacts, RuleSetting, TaskfileFacts } from '../core/findProblems.ts';
 
 const error = (...options: ReadonlyArray<unknown>): RuleSetting => ({ severity: 'error', options });
 
@@ -22,6 +22,7 @@ type ProjectBuilder = {
   readonly withPackageManager: (manager: string | null) => ProjectBuilder;
   readonly withDevDependencies: (names: ReadonlyArray<string>) => ProjectBuilder;
   readonly withRootFiles: (names: ReadonlyArray<string>) => ProjectBuilder;
+  readonly withGitignore: (lines: ProjectFacts['gitignore']) => ProjectBuilder;
   readonly build: () => ProjectFacts;
 };
 
@@ -38,7 +39,7 @@ export function aConformingProject(): ProjectBuilder {
       verbatimModuleSyntax: true,
     },
     eslintRules: {
-      'ts-baseline/no-unused-result': error(),
+      'ts-ianf-strict-baseline/no-unused-result': error(),
       '@typescript-eslint/switch-exhaustiveness-check': error({
         considerDefaultExhaustiveForUnions: false,
         allowDefaultCaseForExhaustiveSwitch: false,
@@ -51,10 +52,14 @@ export function aConformingProject(): ProjectBuilder {
       'no-restricted-syntax': error(...bannedSyntax),
     },
     eslintRoleRules: {
-      core: { 'ts-baseline/no-effects': error(), 'ts-baseline/no-configuration': error() },
-      orchestrator: { 'ts-baseline/no-effects': error(), 'ts-baseline/no-configuration': error() },
-      'driving-adapter': { 'ts-baseline/no-configuration': error(), 'max-lines-per-function': error({ max: 50 }) },
-      'driven-adapter': { 'ts-baseline/no-configuration': error(), 'max-lines-per-function': error({ max: 50 }) },
+      core: {
+        'ts-ianf-strict-baseline/no-effects': error(),
+        'ts-ianf-strict-baseline/imports-reach-nothing-impure': error(),
+        'ts-ianf-strict-baseline/no-configuration': error(),
+      },
+      orchestrator: { 'ts-ianf-strict-baseline/no-effects': error(), 'ts-ianf-strict-baseline/no-configuration': error() },
+      'driving-adapter': { 'ts-ianf-strict-baseline/no-configuration': error(), 'max-lines-per-function': error({ max: 50 }) },
+      'driven-adapter': { 'ts-ianf-strict-baseline/no-configuration': error(), 'max-lines-per-function': error({ max: 50 }) },
       entrypoint: { 'max-lines-per-function': error({ max: 50 }) },
     },
     prettierOptions: prettier,
@@ -71,13 +76,17 @@ export function aConformingProject(): ProjectBuilder {
       'driving-adapters-import-no-driven-adapter': 'error',
       'driven-adapters-import-only-core-and-driven-adapters': 'error',
       'entrypoint-is-not-imported': 'error',
+      'only-tests-import-fakes-and-test-code': 'error',
+      'fakes-import-only-core-orchestrators-and-fakes': 'error',
+      'test-code-imports-no-adapter': 'error',
       'no-container': 'error',
       'no-circular': 'error',
     },
     packageName: 'a-project',
     packageManager: 'pnpm@12.9.0',
-    devDependencies: ['@ianflanagan1/ts-baseline', 'dependency-cruiser', 'knip', 'vitest'],
+    devDependencies: ['@ianflanagan1/ts-ianf-strict-baseline', 'dependency-cruiser', 'knip', 'vitest'],
     rootFiles: ['pnpm-lock.yaml', 'knip.json'],
+    gitignore: ['node_modules/', '/cache/'],
   });
 }
 
@@ -103,6 +112,7 @@ function builder(facts: ProjectFacts): ProjectBuilder {
     withPackageManager: (packageManager) => builder({ ...facts, packageManager }),
     withDevDependencies: (devDependencies) => builder({ ...facts, devDependencies }),
     withRootFiles: (rootFiles) => builder({ ...facts, rootFiles }),
+    withGitignore: (gitignore) => builder({ ...facts, gitignore }),
     build: () => facts,
   };
 }

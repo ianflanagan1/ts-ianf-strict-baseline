@@ -1,27 +1,35 @@
 {
   "language": "typescript",
-  "baseline": "@ianflanagan1/ts-baseline",
+  "baseline": "@ianflanagan1/ts-ianf-strict-baseline",
   "roles": {
-    "core": "Modules under src/core/.",
-    "orchestrator": "Modules under src/orchestrators/.",
-    "driving-adapter": "Modules under src/adapters/driving/.",
-    "driven-adapter": "Modules under src/adapters/driven/.",
-    "entrypoint": "src/main.ts."
+    "entrypoint": "By path: the module src/main.ts or src/main.tsx, and nothing else, so the checks tell one entrypoint and no second program's. Its helpers are the functions it leaves unexported; a module of wiring that entrypoints share has no directory, and is reported as having no role.",
+    "driving-adapter": "By path: every module under src/adapters/driving/. The checks don't tell a driving adapter's entry from the helpers that serve its contract, or one driving adapter from another. The checks tell no helper from a member: every module there counts as a member, and a helper is a function or type a module leaves unexported.",
+    "driven-adapter": "By path: every module under src/adapters/driven/, whether or not anything in it implements a port. The checks tell no helper from a member: every module there counts as a member, and a helper is a function or type a module leaves unexported.",
+    "port": "Not told. A port is an interface declared in its orchestrator's module, under src/orchestrators/, and the checks hold it to what they hold orchestrator code to: nothing tells an interface that is a port from any other declaration there.",
+    "orchestrator": "By path: every module under src/orchestrators/, the ports declared there included. The checks tell no helper from a member: every module there counts as a member, and a helper is a function or type a module leaves unexported.",
+    "decision": "By path: every module under src/core/. The checks don't tell a decision from a value: the one core directory holds both, and each is held to what the core is held to.",
+    "value": "By path: every module under src/core/. The checks don't tell a value from a decision: the one core directory holds both, and each is held to what the core is held to.",
+    "fake": "By path: every module under src/fakes/, whether or not anything in it has a port's shape. One declared in a test file (*.test.ts) is test code to the checks, with no role. The checks tell no helper from a member: every module there counts as a member, and a helper is a function or type a module leaves unexported."
   },
+  "reviewed-roles": [
+    "entrypoint",
+    "driving-adapter",
+    "driven-adapter"
+  ],
   "checks": {
     "role-paths": {
       "kind": "custom",
-      "summary": "The ESLint and dependency-cruiser configs give each module under src/ one role by its path, and verify checks that a file of each role has its role's rules."
+      "summary": "The ESLint and dependency-cruiser configs give each module under src/ one role by its path, and verify checks that a file in each role's directory has that role's rules."
     },
     "unplaced-modules": {
       "kind": "tool",
       "tool": "eslint",
-      "summary": "no-restricted-syntax reports every module under src/ but tests that is in none of the roles' directories, which has no role."
+      "summary": "no-restricted-syntax reports every module under src/ but tests that is in none of the roles' directories, nor in src/fakes/ or src/testing/, which has no role."
     },
     "depcruise-core-is-pure": {
       "kind": "tool",
       "tool": "dependency-cruiser",
-      "summary": "core-is-pure: a module under src/core/ imports nothing outside src/core/, including Node built-ins and libraries."
+      "summary": "core-is-pure: a module under src/core/ imports none of the project's own code outside src/core/. Packages and host modules are left to imports-reach-nothing-impure."
     },
     "depcruise-orchestrators-import-no-adapter": {
       "kind": "tool",
@@ -48,6 +56,16 @@
       "tool": "dependency-cruiser",
       "summary": "entrypoint-is-not-imported: no module but a test imports src/main.ts."
     },
+    "depcruise-only-tests-import-fakes-and-test-code": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "only-tests-import-fakes-and-test-code: no module but a test imports one under src/fakes/ or src/testing/, the test code a project ships for the tests of projects that depend on it, apart from the modules of those two directories. test-code-imports-no-adapter keeps a module under src/testing/ from importing an adapter."
+    },
+    "depcruise-fakes": {
+      "kind": "tool",
+      "tool": "dependency-cruiser",
+      "summary": "fakes-import-only-core-orchestrators-and-fakes: a module under src/fakes/ imports nothing else under src/ but the core, the orchestrators, where the ports are declared, and other fakes."
+    },
     "depcruise-no-container": {
       "kind": "tool",
       "tool": "dependency-cruiser",
@@ -60,11 +78,15 @@
     },
     "no-effects": {
       "kind": "custom",
-      "summary": "ESLint rule ts-baseline/no-effects, in the core and the orchestrators: no global that performs an effect (timers, crypto, fetch, storage, process, console, globalThis), no new Date() or Date.now(), no Math.random(), and no module-level let or var."
+      "summary": "ESLint rule ts-ianf-strict-baseline/no-effects, in the core and the orchestrators: no global that performs an effect (timers, crypto, fetch, storage, process, console, globalThis), no new Date() or Date.now(), no Math.random(), and no module-level let or var."
+    },
+    "imports-reach-nothing-impure": {
+      "kind": "custom",
+      "summary": "ESLint rule ts-ianf-strict-baseline/imports-reach-nothing-impure, in the core: it resolves each import of a package or host module as Node does, with the import conditions, and reads every module that import loads, at any depth, CommonJS and ES modules alike, with typescript-eslint's parser and scope analysis. It reports a host module; an import it can't resolve, and a require or import() of a computed name; a global other than ECMAScript's own pure ones, eval, Function, Date, Intl, process and console among those reported; Math.random; localeCompare and the toLocale methods; a change to a built-in; a module-scope binding that a function assigns, writes through or changes with a mutating method; and a module-scope regular expression with the g or y flag whose lastIndex a function can see. Each report names the path from the core's import to the operation and the line it is on. Its verdicts are kept for the run, by package name, version and install location."
     },
     "no-configuration": {
       "kind": "custom",
-      "summary": "ESLint rule ts-baseline/no-configuration, everywhere but src/main.ts and tests: no process.env, process.argv, import.meta.env or parseArgs."
+      "summary": "ESLint rule ts-ianf-strict-baseline/no-configuration, everywhere but src/main.ts and tests: no process.env, process.argv, import.meta.env or parseArgs."
     },
     "max-lines-edges": {
       "kind": "tool",
@@ -80,10 +102,14 @@
       "kind": "language",
       "summary": "A TypeScript union is closed: no other module can add a member, and the type checker rejects a value outside it."
     },
+    "no-implicit-any": {
+      "kind": "language",
+      "summary": "tsc with strict, which verify requires: a parameter or field with no type, and nothing to infer one from, is an error rather than an any."
+    },
     "banned-syntax": {
       "kind": "tool",
       "tool": "eslint",
-      "summary": "no-restricted-syntax bans enums, default and optional parameters, let and var, and a class extending anything but JavaScript's own errors."
+      "summary": "no-restricted-syntax bans enums, default and optional parameters, optional properties of object types and interfaces, let and var, and a class extending anything but JavaScript's own errors."
     },
     "switch-exhaustiveness": {
       "kind": "tool",
@@ -102,12 +128,57 @@
     },
     "no-unused-result": {
       "kind": "custom",
-      "summary": "ESLint rule ts-baseline/no-unused-result: no expression statement drops a Result."
+      "summary": "ESLint rule ts-ianf-strict-baseline/no-unused-result: no expression statement drops a Result."
     },
     "no-unused-vars": {
       "kind": "tool",
       "tool": "eslint",
       "summary": "@typescript-eslint/no-unused-vars: no variable is assigned and never read."
+    },
+    "no-empty": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "no-empty: no block is empty, unless it holds a comment."
+    },
+    "no-explicit-any": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/no-explicit-any: no type is written as any."
+    },
+    "no-unsafe-any": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/no-unsafe-assignment, no-unsafe-argument, no-unsafe-call, no-unsafe-member-access and no-unsafe-return: a value of type any isn't assigned to a typed variable, passed, called, read from or returned."
+    },
+    "no-unsafe-function-type": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/no-unsafe-function-type: no type is written as Function."
+    },
+    "no-non-null-assertion": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/no-non-null-assertion: no value is asserted defined with the ! operator."
+    },
+    "no-implied-eval": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/no-implied-eval: no function is built from text with new Function, and no text is passed as code to setTimeout, setInterval or setImmediate."
+    },
+    "dot-notation": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/dot-notation: a field named by a string literal is read with a dot, where the type checker enforces private."
+    },
+    "ban-ts-comment": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "@typescript-eslint/ban-ts-comment: no @ts-ignore or @ts-nocheck comment, and no @ts-expect-error comment without a description."
+    },
+    "test-mocks": {
+      "kind": "tool",
+      "tool": "eslint",
+      "summary": "no-restricted-properties, in tests: no vi.mock or vi.spyOn."
     },
     "prettier-check": {
       "kind": "tool",
@@ -116,212 +187,423 @@
     },
     "verify-prettier": {
       "kind": "custom",
-      "summary": "verify reports a Prettier option that differs from @ianflanagan1/ts-baseline/prettier."
+      "summary": "verify reports a Prettier option that differs from @ianflanagan1/ts-ianf-strict-baseline/prettier."
+    },
+    "verify-settings": {
+      "kind": "custom",
+      "summary": "verify reads the project's settings as each tool resolves them, and reports a tsconfig strictness option of the baseline's that isn't on, one of the ESLint rules it lists that isn't an error, in general or in its role's files, a banned syntax the project dropped, and a dependency-cruiser rule of the baseline's that isn't an error."
+    },
+    "verify-shared-tasks": {
+      "kind": "custom",
+      "summary": "verify requires a project's check, format and lint-file tasks to run the baseline's own, which run every check, ts-ianf-strict-baseline verify among them, over the whole project, and counts none run with ignore_error."
+    },
+    "shared-task-caches": {
+      "kind": "custom",
+      "summary": "The shared tasks keep Prettier's, tsc's and ESLint's caches under cache/, and verify requires a project's check, format and lint-file tasks to run the shared ones."
+    },
+    "verify-gitignore": {
+      "kind": "custom",
+      "summary": "verify reports a .gitignore without the line /cache/, or a project without one."
     }
   },
   "clauses": {
-    "every-unit-has-one-role": {
-      "coverage": "full",
+    "core-references-only-core": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-core-is-pure"
+      ],
+      "gap": "A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-references-only-core",
+        "src/rulebook/conformance.test.ts: core-references-only-core misses a name another module declares globally"
+      ],
+      "intent": "planned"
+    },
+    "core-does-nothing-impure": {
+      "coverage": "partial",
+      "checks": [
+        "imports-reach-nothing-impure",
+        "no-effects"
+      ],
+      "gap": "A module-level const can hold a mutable object, a time is built and read in the machine's local time zone, browser globals such as window and document pass, and keeping state that changes across calls in an instance's fields (held-state) isn't detected.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-does-nothing-impure",
+        "src/rulebook/conformance.test.ts: core-does-nothing-impure misses a mutable const",
+        "src/rulebook/conformance.test.ts: core-does-nothing-impure misses a time in the local time zone"
+      ],
+      "intent": "planned"
+    },
+    "core-calls-reach-nothing-impure": {
+      "coverage": "partial",
+      "checks": [
+        "imports-reach-nothing-impure"
+      ],
+      "gap": "State kept through this, as an object's method that changes its own field does, or through a local that holds a module-scope value, isn't seen, and nor is a change made by passing a module-scope value to a function other than Object.assign, Object.defineProperty and their kind, or by a method other than the mutating ones of arrays, maps and sets. Math.random reached by destructuring or a computed member passes. A method called replace, match, split or search is taken by its name for String's, so a global regular expression given to another object's method of that name passes. Totality isn't checked: a function that throws passes. ESLint's cache keeps a core module's result until that module or the config changes, so an upgraded package is read again only then, or with the cache cleared. It reads what a module's code does, not which of its functions the core calls: one operation anywhere in a module the import loads is reported, even where nothing the core calls reaches it. Whatever it can't follow is reported rather than passed: a require or import() of a computed name, an import it can't resolve (a native addon, a tsconfig path alias or a package.json imports entry among them), code it can't parse, a feature test such as typeof window, and a callback a module runs while it loads that writes a module-scope value, which it takes for a function run later.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-calls-reach-nothing-impure"
+      ],
+      "intent": "planned"
+    },
+    "core-loading-does-nothing-impure": {
+      "coverage": "partial",
+      "checks": [
+        "imports-reach-nothing-impure",
+        "no-effects"
+      ],
+      "gap": "In the core's own modules, browser globals such as window and document pass at load time, as they do anywhere, since no-effects leaves them out. In the modules a package loads: State kept through this, as an object's method that changes its own field does, or through a local that holds a module-scope value, isn't seen, and nor is a change made by passing a module-scope value to a function other than Object.assign, Object.defineProperty and their kind, or by a method other than the mutating ones of arrays, maps and sets. Math.random reached by destructuring or a computed member passes. A method called replace, match, split or search is taken by its name for String's, so a global regular expression given to another object's method of that name passes. Totality isn't checked: a function that throws passes. ESLint's cache keeps a core module's result until that module or the config changes, so an upgraded package is read again only then, or with the cache cleared.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-does-nothing-impure",
+        "src/rulebook/conformance.test.ts: core-loading-does-nothing-impure"
+      ],
+      "intent": "planned"
+    },
+    "core-receives-only-pure-values": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "every-declaration-has-one-role": {
+      "coverage": "partial",
       "checks": [
         "role-paths",
         "unplaced-modules"
       ],
+      "gap": "A role is taken from the module's path and not from the declaration's own code. A service that holds both a port and a database client is checked as whatever its directory says, and a declaration that fits no role is reported only when its module is in none of the roles' directories.",
       "proof": [
-        "src/rulebook/conformance.test.ts: every-unit-has-one-role",
+        "src/rulebook/conformance.test.ts: every-declaration-has-one-role",
         "src/core/findProblems.test.ts: reports a role's rule that a later block turned off"
-      ]
+      ],
+      "intent": "planned"
     },
-    "dependency-units-keep-their-role": {
+    "a-unit-of-code-holds-one-role": {
       "coverage": "partial",
       "checks": [
-        "depcruise-core-is-pure"
+        "role-paths",
+        "imports-reach-nothing-impure"
       ],
-      "gap": "A dependency's modules get no role of their own: the core may use no library at all, but an orchestrator may import any library, whatever role its module plays.",
+      "gap": "A module has the one role its path gives it, and nothing compares the roles of its declarations. One that mixes roles is reported only where a declaration imports what the module's directory may not, as a store in a core module does; a controller beside its orchestrator, or a decision beside a store under src/adapters/driven/, isn't.",
       "proof": [
-        "src/rulebook/conformance.test.ts: core-libraries-are-pure"
-      ]
-    },
-    "core-imports-only-core": {
-      "coverage": "full",
-      "checks": [
-        "depcruise-core-is-pure"
+        "src/rulebook/conformance.test.ts: a-unit-of-code-holds-one-role",
+        "src/rulebook/conformance.test.ts: a-unit-of-code-holds-one-role misses a module whose directory allows both"
       ],
-      "proof": [
-        "src/rulebook/conformance.test.ts: core-imports-only-core"
-      ]
+      "intent": "planned"
     },
-    "core-performs-no-effects": {
+    "dependency-declarations-keep-their-role": {
+      "coverage": "none",
+      "note": "The checks give a dependency's declarations no roles. dependency-cruiser's core-is-pure no longer keeps the core from every package: imports-reach-nothing-impure judges a package by what its code does, so a first-party dependency's orchestrator, which does nothing impure itself, passes in the core, as its core type does. Code of every other role may reference any declaration of a dependency.",
+      "intent": "planned"
+    },
+    "other-roles-reach-only-members": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "adapters-and-entrypoints-perform-only-their-roles-operations": {
       "coverage": "partial",
       "checks": [
-        "depcruise-core-is-pure",
-        "no-effects"
+        "no-configuration"
       ],
-      "gap": "A module-level const can hold a mutable object, browser globals such as window and document pass, and keeping state that changes across calls in an instance's fields (held-state) isn't detected.",
+      "gap": "Only reading configuration is reported. An adapter or the entrypoint may perform any other operation: a driving adapter may call out over the network or reach a database, a driven adapter may serve requests, and the entrypoint may do either.",
       "proof": [
-        "src/rulebook/conformance.test.ts: core-performs-no-effects",
-        "src/rulebook/conformance.test.ts: core-performs-no-effects misses a mutable const"
-      ]
-    },
-    "core-libraries-are-pure": {
-      "coverage": "full",
-      "checks": [
-        "depcruise-core-is-pure"
+        "src/rulebook/conformance.test.ts: adapters-and-entrypoints-perform-only-their-roles-operations"
       ],
-      "proof": [
-        "src/rulebook/conformance.test.ts: core-libraries-are-pure"
-      ],
-      "note": "Stricter than the clause: the core may use no library at all."
+      "intent": "planned"
     },
-    "core-receives-only-pure-values": {
-      "coverage": "none"
+    "adapters-and-entrypoints-reach-only-their-roles-operations": {
+      "coverage": "none",
+      "intent": "planned"
     },
-    "orchestrator-imports-no-adapter": {
-      "coverage": "full",
-      "checks": [
-        "depcruise-orchestrators-import-no-adapter",
-        "depcruise-entrypoint-is-not-imported"
-      ],
-      "proof": [
-        "src/rulebook/conformance.test.ts: orchestrator-imports-no-adapter"
-      ]
-    },
-    "orchestrator-performs-no-effects": {
-      "coverage": "partial",
-      "checks": [
-        "depcruise-orchestrators-are-pure",
-        "no-effects"
-      ],
-      "gap": "A module-level const can hold a mutable object, browser globals such as window and document pass, and keeping state that changes across calls in an instance's fields (held-state) isn't detected.",
-      "proof": [
-        "src/rulebook/conformance.test.ts: orchestrator-performs-no-effects"
-      ]
-    },
-    "orchestrator-libraries-are-pure": {
-      "coverage": "none"
-    },
-    "orchestrator-branches-only-on-core-results": {
-      "coverage": "none"
-    },
-    "driving-adapter-imports-only-core-orchestrators-and-driving-adapters": {
+    "driving-adapter-code-references-only-orchestrators-and-the-core": {
       "coverage": "partial",
       "checks": [
         "depcruise-driving-adapters",
         "depcruise-entrypoint-is-not-imported"
       ],
-      "gap": "A port is declared in the orchestrator's module, which a driving adapter may import, so a driving adapter that takes a port isn't caught.",
+      "gap": "A port is declared in its orchestrator's module, which a driving adapter may import, so a controller that references a port isn't reported. A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
       "proof": [
-        "src/rulebook/conformance.test.ts: driving-adapter-imports-only-core-orchestrators-and-driving-adapters"
-      ]
-    },
-    "driven-adapter-imports-only-core-ports-and-driven-adapters": {
-      "coverage": "full",
-      "checks": [
-        "depcruise-driven-adapters"
+        "src/rulebook/conformance.test.ts: driving-adapter-code-references-only-orchestrators-and-the-core",
+        "src/rulebook/conformance.test.ts: driving-adapter-code-references-only-orchestrators-and-the-core misses a port"
       ],
-      "proof": [
-        "src/rulebook/conformance.test.ts: driven-adapter-imports-only-core-ports-and-driven-adapters"
-      ]
+      "intent": "planned"
     },
-    "driving-adapter-calls-no-driven-adapter": {
+    "driving-adapter-code-only-reports-what-a-decision-returns": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "driven-adapter-code-references-only-ports-and-values": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-driven-adapters",
+        "depcruise-entrypoint-is-not-imported"
+      ],
+      "gap": "The checks don't tell a decision from a value: the one core directory holds both. A driven adapter may reference any module under src/core/, so a store that calls a decision function isn't reported. A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: driven-adapter-code-references-only-ports-and-values",
+        "src/rulebook/conformance.test.ts: driven-adapter-code-references-only-ports-and-values misses a call to a decision"
+      ],
+      "intent": "planned"
+    },
+    "driving-adapter-code-calls-no-driven-adapter": {
       "coverage": "partial",
       "checks": [
         "depcruise-driving-adapters"
       ],
-      "gap": "A driving adapter that declares an interface and is given a driven adapter through it by src/main.ts is not caught; only importing one is.",
+      "gap": "A driving adapter that declares an interface and is given a driven adapter through it by src/main.ts is not caught, nor is one given the system clock; only importing a driven adapter of the project is.",
       "proof": [
-        "src/rulebook/conformance.test.ts: driving-adapter-imports-only-core-orchestrators-and-driving-adapters"
-      ]
+        "src/rulebook/conformance.test.ts: driving-adapter-code-references-only-orchestrators-and-the-core"
+      ],
+      "intent": "planned"
     },
-    "driven-adapter-calls-no-orchestrator": {
+    "driven-adapter-code-calls-no-orchestrator": {
       "coverage": "partial",
       "checks": [
         "depcruise-driven-adapters"
       ],
       "gap": "A driven adapter that declares an interface and is given an orchestrator through it by src/main.ts is not caught; only importing one is.",
       "proof": [
-        "src/rulebook/conformance.test.ts: driven-adapter-imports-only-core-ports-and-driven-adapters"
-      ]
+        "src/rulebook/conformance.test.ts: driven-adapter-code-references-only-ports-and-values"
+      ],
+      "intent": "planned"
     },
-    "adapter-size-is-limited": {
+    "adapter-code-function-size-is-limited": {
       "coverage": "full",
       "checks": [
         "max-lines-edges",
         "complexity"
       ],
       "proof": [
-        "src/rulebook/conformance.test.ts: adapter-size-is-limited"
+        "src/rulebook/conformance.test.ts: adapter-code-function-size-is-limited"
       ]
     },
-    "only-entrypoints-read-configuration": {
-      "coverage": "full",
+    "only-entrypoint-code-reads-configuration": {
+      "coverage": "partial",
       "checks": [
         "no-configuration"
       ],
+      "gap": "Only the global process and the names env, argv and parseArgs imported from Node are reported: configuration read through process imported whole from node:process, or through a name taken from it by destructuring, isn't, and neither is a library that reads it.",
       "proof": [
-        "src/rulebook/conformance.test.ts: only-entrypoints-read-configuration"
-      ]
+        "src/rulebook/conformance.test.ts: only-entrypoint-code-reads-configuration",
+        "src/rulebook/conformance.test.ts: only-entrypoint-code-reads-configuration misses a process that is imported"
+      ],
+      "intent": "planned"
     },
-    "entrypoint-size-is-limited": {
+    "entrypoint-code-function-size-is-limited": {
       "coverage": "full",
       "checks": [
         "max-lines-edges"
       ],
       "proof": [
-        "src/rulebook/conformance.test.ts: entrypoint-size-is-limited"
-      ]
+        "src/rulebook/conformance.test.ts: entrypoint-code-function-size-is-limited"
+      ],
+      "note": "Only src/main.ts may import both adapters and orchestrators, so wiring that entrypoints would share has no other module to be in."
     },
-    "wired-without-a-container": {
+    "entrypoint-code-wires-without-a-container": {
       "coverage": "partial",
       "checks": [
         "depcruise-no-container"
       ],
       "gap": "Only the common container libraries are banned, not a service locator written in the project.",
       "proof": [
-        "src/rulebook/conformance.test.ts: wired-without-a-container"
-      ]
+        "src/rulebook/conformance.test.ts: entrypoint-code-wires-without-a-container"
+      ],
+      "intent": "declined",
+      "reason": "An import check sees only the libraries it lists, and a hand-written locator is a map looked up by name, which no static check tells from other maps."
     },
-    "entrypoint-calls-only-driving-adapters": {
-      "coverage": "none"
+    "entrypoint-code-calls-only-driving-adapters-and-values": {
+      "coverage": "none",
+      "note": "Nothing checks what src/main.ts calls: it may import and call any module.",
+      "intent": "planned"
     },
-    "no-import-cycles": {
-      "coverage": "full",
+    "outside-facing-code-names-no-internal-type": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "external-driving-adapters-get-no-internal-values": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "external-driving-adapters-get-no-internal-values-from-decisions": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "external-driven-adapters-take-no-internal-values": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "only-decisions-and-internal-adapters-read-internal-values": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "the-internal-wrapper-shows-nothing-it-holds": {
+      "coverage": "none",
+      "note": "TypeScript's shared ID unit-of-code, which would hold the Internal wrapper and the tests of what it shows, doesn't exist yet.",
+      "intent": "planned"
+    },
+    "no-reference-cycles": {
+      "coverage": "partial",
       "checks": [
         "depcruise-no-circular"
       ],
+      "gap": "A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
       "proof": [
-        "src/rulebook/conformance.test.ts: no-import-cycles"
-      ]
+        "src/rulebook/conformance.test.ts: no-reference-cycles"
+      ],
+      "intent": "planned"
     },
-    "ports-declared-by-their-user": {
-      "coverage": "full",
+    "nothing-sleeps": {
+      "coverage": "partial",
+      "checks": [
+        "no-effects",
+        "imports-reach-nothing-impure",
+        "depcruise-orchestrators-are-pure"
+      ],
+      "gap": "Only the core and the orchestrators are checked, where a timer global or Node's timers can't be reached: an adapter or the entrypoint may sleep, an orchestrator may call a library that does, and Atomics.wait passes everywhere.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: nothing-sleeps",
+        "src/rulebook/conformance.test.ts: nothing-sleeps misses an adapter that sleeps"
+      ],
+      "intent": "planned"
+    },
+    "orchestrator-code-branches-only-on-decisions": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "orchestrator-code-runs-no-loop-until-stopped": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "orchestrator-code-references-no-entrypoint-or-adapter-code": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-orchestrators-import-no-adapter",
+        "depcruise-entrypoint-is-not-imported"
+      ],
+      "gap": "A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: orchestrator-code-references-no-entrypoint-or-adapter-code"
+      ],
+      "intent": "planned"
+    },
+    "orchestrator-code-performs-no-effects": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-orchestrators-are-pure",
+        "no-effects"
+      ],
+      "gap": "A module-level const can hold a mutable object, a time is built and read in the machine's local time zone, browser globals such as window and document pass, and keeping state that changes across calls in an instance's fields (held-state) isn't detected.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: orchestrator-code-performs-no-effects"
+      ],
+      "intent": "planned"
+    },
+    "orchestrator-code-reaches-nothing-impure": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "port-methods-take-and-return-signature-types": {
+      "coverage": "partial",
+      "checks": [
+        "no-explicit-any"
+      ],
+      "gap": "Only a parameter or result written as any is reported, as it is anywhere: a port's method may take or return a value of unknown type, an object, a map, a callback, a plain-data type or a library's type.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: port-methods-take-and-return-signature-types",
+        "src/rulebook/conformance.test.ts: port-methods-take-and-return-signature-types misses a callback, an unknown and a map"
+      ],
+      "intent": "planned"
+    },
+    "orchestrator-takes-and-returns-signature-types": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "decisions-driving-adapters-call-take-and-return-signature-types": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "orchestrator-is-given-ports": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-orchestrators-import-no-adapter",
+        "depcruise-no-container"
+      ],
+      "gap": "An orchestrator may import any library, so one built with a third-party client, a logger or a writer, or with an interface it didn't declare, isn't reported.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: orchestrator-code-references-no-entrypoint-or-adapter-code",
+        "src/rulebook/conformance.test.ts: entrypoint-code-wires-without-a-container"
+      ],
+      "intent": "planned"
+    },
+    "port-is-declared-by-its-caller": {
+      "coverage": "partial",
       "checks": [
         "depcruise-orchestrators-import-no-adapter"
       ],
+      "gap": "An orchestrator can't import an adapter, so it can't take an interface an adapter's module exports. A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
       "proof": [
-        "src/rulebook/conformance.test.ts: orchestrator-imports-no-adapter"
+        "src/rulebook/conformance.test.ts: orchestrator-code-references-no-entrypoint-or-adapter-code"
       ],
-      "note": "An orchestrator can't import an adapter, so it can't take an interface an adapter declares."
+      "intent": "planned"
     },
-    "port-units-follow-typing": {
+    "port-units-of-code-follow-interface-implementation": {
       "case": "structural",
       "coverage": "partial",
       "checks": [
         "depcruise-driven-adapters"
       ],
-      "gap": "A module of interfaces that other orchestrators import is an orchestrator like any other, so a ports module is not caught.",
+      "gap": "A module of interfaces that other orchestrators import is an orchestrator like any other, so a ports module is not caught. A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
       "proof": [
-        "src/rulebook/conformance.test.ts: driven-adapter-imports-only-core-ports-and-driven-adapters"
-      ]
+        "src/rulebook/conformance.test.ts: driven-adapter-code-references-only-ports-and-values"
+      ],
+      "intent": "planned"
     },
-    "ports-named-in-domain-terms": {
-      "coverage": "convention",
-      "where": "README.md, Roles"
+    "port-is-named-in-domain-terms": {
+      "coverage": "convention-only",
+      "where": "README.md, Roles",
+      "intent": "declined",
+      "reason": "Whether a name is in the domain's terms, or a method is shaped for one thing its caller does, is a judgement no static check can make."
     },
-    "applications-are-never-dependencies": {
-      "coverage": "none"
+    "port-methods-return-no-interfaces": {
+      "coverage": "none",
+      "intent": "planned"
     },
-    "library-adapters-use-only-the-standard-library": {
-      "coverage": "none"
+    "port-methods-need-no-call-order": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "writes-that-belong-together-are-one-port-call": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "reserved-operations-are-performed-only-by-their-system-adapters": {
+      "coverage": "none",
+      "note": "no-effects bans the clock, timers and randomness in the core and the orchestrators, which core-does-nothing-impure and orchestrator-code-performs-no-effects record. In adapter and entrypoint code, where this clause's violations are, the checks allow them all, and TypeScript's shared code doesn't hold the system adapters yet.",
+      "intent": "planned"
+    },
+    "no-third-party-feature-performs-a-reserved-operation": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "standard-library-and-third-party-code-takes-sources-from-the-system-adapters": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "value-code-references-only-value-code": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-core-is-pure"
+      ],
+      "gap": "The checks don't tell a decision from a value: the one core directory holds both. Value code is kept from referencing the shell, but a core type that references a decision function isn't reported. A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-references-only-core"
+      ],
+      "intent": "planned"
+    },
+    "value-code-decides-nothing": {
+      "coverage": "none",
+      "note": "The checks don't tell a decision from a value, and nothing reads whether a core type's method derives a value or decides something.",
+      "intent": "planned"
+    },
+    "arguments-are-not-mutated": {
+      "coverage": "none",
+      "intent": "planned"
     },
     "closed-families-are-sealed": {
       "coverage": "partial",
@@ -332,10 +614,13 @@
       "gap": "A family modelled as an interface that classes implement is not recognised as one, so any module can add a variant.",
       "proof": [
         "src/rulebook/conformance.test.ts: closed-families-are-sealed"
-      ]
+      ],
+      "intent": "declined",
+      "reason": "Whether an interface's variants are all its module's own is a design decision, which no static check can see until the family is a union."
     },
-    "sealed-variants-share-their-unit": {
-      "coverage": "none"
+    "sealed-variants-share-their-unit-of-code": {
+      "coverage": "none",
+      "intent": "planned"
     },
     "matches-on-closed-families-are-exhaustive": {
       "coverage": "full",
@@ -355,23 +640,167 @@
       "proof": [
         "src/rulebook/conformance.test.ts: matches-on-closed-families-have-no-default-arm"
       ],
-      "note": "TypeScript needs no catch-all: it knows a switch that names every member returns."
+      "note": "TypeScript knows a switch that names every member returns, so no default arm is allowed, not even one that only throws."
     },
-    "open-interfaces-are-not-matched-by-type": {
-      "coverage": "none"
+    "no-code-is-run-from-text": {
+      "coverage": "partial",
+      "checks": [
+        "no-implied-eval"
+      ],
+      "gap": "eval itself isn't reported.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: no-code-is-run-from-text",
+        "src/rulebook/conformance.test.ts: no-code-is-run-from-text misses eval"
+      ],
+      "intent": "planned"
     },
-    "ports-are-open": {
-      "coverage": "none"
+    "nothing-is-called-by-a-computed-name": {
+      "coverage": "none",
+      "intent": "planned"
     },
-    "classes-extend-only-allowed-bases": {
+    "nothing-is-imported-by-a-computed-path": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "visibility-is-not-bypassed": {
+      "coverage": "partial",
+      "checks": [
+        "dot-notation"
+      ],
+      "gap": "Only a key written as a string literal is reported: a private field read by element access with a key held in a constant isn't.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: visibility-is-not-bypassed",
+        "src/rulebook/conformance.test.ts: visibility-is-not-bypassed misses a key held in a constant"
+      ],
+      "intent": "planned"
+    },
+    "loops-compute-no-value-an-operation-names": {
+      "coverage": "partial",
+      "checks": [
+        "banned-syntax"
+      ],
+      "gap": "With let and var banned, a loop can't keep a count, a total, a flag or the best element so far in a local. One that fills a list or a map, which a const local still lets it change, or that returns the first element to pass a test, isn't reported.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: loops-compute-no-value-an-operation-names",
+        "src/rulebook/conformance.test.ts: loops-compute-no-value-an-operation-names misses a loop that fills a list"
+      ],
+      "intent": "planned"
+    },
+    "collection-operations-take-pure-functions": {
+      "coverage": "partial",
+      "checks": [
+        "banned-syntax"
+      ],
+      "gap": "With let and var banned, a function passed to a collection operation can't count in a local it captured. forEach isn't reported, and neither is a function passed to one that calls a port, performs an effect or changes a list or map it captured.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: collection-operations-take-pure-functions",
+        "src/rulebook/conformance.test.ts: collection-operations-take-pure-functions misses forEach with an effect"
+      ],
+      "intent": "planned"
+    },
+    "folds-compute-no-value-a-narrower-operation-names": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "collection-operations-come-from-one-place": {
+      "coverage": "none",
+      "note": "dependency-cruiser's core-is-pure no longer keeps every library from the core, and imports-reach-nothing-impure passes a utility library whose code is pure. Nothing reports a utility library in any role, reduce, a function's name passed to map, a project's own generic collection function or a class that wraps a collection.",
+      "intent": "planned"
+    },
+    "constructors-only-store-their-arguments": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "field-initialisers-are-constants": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "core-types-have-factory-functions": {
+      "case": "private-constructors",
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "core-types-are-built-only-by-their-factory-functions": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "no-standard-library-or-third-party-code-builds-core-types": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "one-factory-function-calls-each-constructor": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "factory-functions-take-signature-types": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "parameters-are-typed": {
+      "coverage": "full",
+      "checks": [
+        "no-implicit-any"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: parameters-are-typed"
+      ]
+    },
+    "return-types-are-declared-where-called-from-outside": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "fields-are-typed": {
+      "coverage": "full",
+      "checks": [
+        "no-implicit-any"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: fields-are-typed"
+      ]
+    },
+    "collection-types-name-their-element-type": {
+      "coverage": "none",
+      "note": "A new Map() with no type arguments isn't reported, even where it is returned as a map of a declared type.",
+      "intent": "planned"
+    },
+    "fields-are-declared-read-only": {
+      "case": "supported",
+      "coverage": "partial",
+      "checks": [
+        "prefer-readonly"
+      ],
+      "gap": "Only a private field of a class that is never reassigned is reported: a public or protected field, a property of an object type, and a read-only field whose type lets its contents change, such as an array rather than a ReadonlyArray, aren't.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: fields-are-declared-read-only"
+      ],
+      "intent": "planned"
+    },
+    "fields-are-assigned-only-at-construction": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "field-collections-are-not-changed": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "locals-are-declared-constant": {
+      "case": "supported",
       "coverage": "full",
       "checks": [
         "banned-syntax"
       ],
       "proof": [
-        "src/rulebook/conformance.test.ts: classes-extend-only-allowed-bases"
+        "src/rulebook/conformance.test.ts: locals-are-declared-constant"
       ],
-      "note": "JavaScript's own errors may be extended, so a thrown error can have a name of its own."
+      "note": "let and var are banned outright, so every local is const."
+    },
+    "no-boolean-parameters": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "no-boolean-fields": {
+      "coverage": "none",
+      "intent": "planned"
     },
     "no-parameter-default-values": {
       "coverage": "full",
@@ -391,37 +820,70 @@
         "src/rulebook/conformance.test.ts: no-optional-parameters"
       ]
     },
-    "constructors-only-store-their-arguments": {
-      "coverage": "none"
-    },
-    "field-initialisers-are-constants": {
-      "coverage": "none"
-    },
-    "invariant-types-are-closed": {
-      "coverage": "none"
-    },
-    "closed-types-have-no-way-around-their-factories": {
-      "coverage": "none"
-    },
-    "arguments-are-not-mutated": {
-      "coverage": "none"
-    },
-    "fields-are-declared-read-only": {
+    "classes-extend-only-allowed-bases": {
       "case": "supported",
+      "coverage": "full",
+      "checks": [
+        "banned-syntax"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: classes-extend-only-allowed-bases"
+      ],
+      "note": "The allowlist is JavaScript's own errors, so a thrown error can have a name of its own."
+    },
+    "types-declare-every-method-they-have": {
       "coverage": "partial",
       "checks": [
-        "prefer-readonly"
+        "banned-syntax"
       ],
-      "gap": "Only a private field that is never reassigned is reported: a public or protected field, and a read-only field whose type lets its contents change, such as an array rather than a ReadonlyArray, aren't.",
+      "gap": "A class extending a mixin's result is reported, since it extends something other than an error, but code that copies methods onto a class or its prototype, and a Proxy that forwards calls, aren't.",
       "proof": [
-        "src/rulebook/conformance.test.ts: fields-are-declared-read-only"
-      ]
+        "src/rulebook/conformance.test.ts: types-declare-every-method-they-have"
+      ],
+      "intent": "planned"
     },
-    "fields-are-assigned-only-at-construction": {
-      "coverage": "none"
+    "core-type-fields-are-not-nullable": {
+      "coverage": "partial",
+      "checks": [
+        "banned-syntax"
+      ],
+      "gap": "Only an optional property of an object type or interface is reported, as it is anywhere. A field typed with null or undefined, an optional field of a class, and a collection of nullable elements aren't, and nothing tells a core type's fields from a plain-data type's.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: core-type-fields-are-not-nullable",
+        "src/rulebook/conformance.test.ts: core-type-fields-are-not-nullable misses a null, an undefined and an optional field of a class"
+      ],
+      "intent": "planned"
     },
-    "field-collections-are-not-changed": {
-      "coverage": "none"
+    "field-access-runs-no-code": {
+      "case": "supported",
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "conversions-run-no-code": {
+      "case": "supported",
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "iteration-runs-no-code": {
+      "case": "supported",
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "no-hooks-reached-through-catch-all-parameters": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "nothing-runs-when-a-value-is-collected": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "open-interfaces-are-not-matched-by-implementation": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "no-port-is-sealed": {
+      "coverage": "none",
+      "intent": "planned"
     },
     "parameters-are-not-reassigned": {
       "coverage": "full",
@@ -432,16 +894,158 @@
         "src/rulebook/conformance.test.ts: parameters-are-not-reassigned"
       ]
     },
-    "locals-are-declared-constant": {
-      "case": "supported",
-      "coverage": "full",
+    "every-type-has-one-shape": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "only-adapter-and-entrypoint-code-references-plain-data-types": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "the-core-takes-no-plain-data": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "unknown-types-stay-in-adapter-and-entrypoint-code": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "no-type-turns-checking-off": {
+      "coverage": "partial",
       "checks": [
-        "banned-syntax"
+        "no-explicit-any",
+        "no-unsafe-any",
+        "no-unsafe-function-type"
       ],
+      "gap": "A declaration file that declares a module with no body, which makes everything imported from it any, isn't reported.",
       "proof": [
-        "src/rulebook/conformance.test.ts: locals-are-declared-constant"
+        "src/rulebook/conformance.test.ts: no-type-turns-checking-off"
       ],
-      "note": "let and var are banned outright, so every local is const."
+      "intent": "planned"
+    },
+    "no-cast-asserts-an-unchecked-type": {
+      "coverage": "partial",
+      "checks": [
+        "no-non-null-assertion"
+      ],
+      "gap": "Only the non-null operator is reported. A cast with as, a cast through unknown, a definite assignment assertion, a type guard or assertion function that tests nothing, String() of an unknown, and a declaration file that narrows a library's types aren't.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: no-cast-asserts-an-unchecked-type",
+        "src/rulebook/conformance.test.ts: no-cast-asserts-an-unchecked-type misses a cast"
+      ],
+      "intent": "planned"
+    },
+    "no-positional-groups": {
+      "case": "tuples",
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "built-values-are-not-changed": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "references-are-not-compared-by-identity": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "collections-are-not-keyed-by-instance": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "values-have-immutable-types": {
+      "coverage": "none",
+      "note": "dependency-cruiser's core-is-pure no longer keeps every library from the core, which reported a third-party class a core type names, and a type-only import runs nothing for imports-reach-nothing-impure to read. Nothing reads whether a type is immutable: a standard-library type that changes in place, such as Date, passes everywhere.",
+      "intent": "planned"
+    },
+    "collection-types-are-immutable": {
+      "case": "read-only-types",
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "core-throws-nothing": {
+      "case": "needs-nothing",
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "planned"
+    },
+    "core-catches-expected-failures-it-calls": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "declined",
+      "reason": "Whether a built-in or a library throws for an expected failure is in its documentation, not its types, so no static check can tell which calls need a catch."
+    },
+    "driving-adapter-catches-each-invocation": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "planned"
+    },
+    "driving-adapter-code-catches-everything-only-around-invocations": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "planned"
+    },
+    "invocation-catch-all-reports-a-failure": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "declined",
+      "reason": "What a catch-all writes to its caller and its log is not decidable statically."
+    },
+    "invocation-catch-all-keeps-internals-from-outside-callers": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "declined",
+      "reason": "What a catch-all writes to its caller is not decidable statically."
+    },
+    "driving-adapter-reports-returned-failures": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "driving-adapter-reports-failures-a-decision-returns": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "entrypoint-catches-what-escapes": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "planned"
+    },
+    "error-types-of-other-roles-are-not-matched": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-core-is-pure",
+        "depcruise-orchestrators-import-no-adapter",
+        "depcruise-driving-adapters",
+        "depcruise-driven-adapters"
+      ],
+      "gap": "An error type is out of reach only where its module can't be imported. src/main.ts may import any module, so an entrypoint that matches a driving adapter's error type isn't reported; a first-party dependency's declarations have no roles, so its adapters' error types can be matched anywhere, the core included when the module that declares one does nothing impure; and a driving adapter may match an error type an orchestrator's module declares. A name another module declares for every module, with declare global or in a declaration file, is referenced with no import, which dependency-cruiser doesn't see.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: error-types-of-other-roles-are-not-matched",
+        "src/rulebook/conformance.test.ts: orchestrator-code-references-no-entrypoint-or-adapter-code"
+      ],
+      "intent": "planned"
+    },
+    "orchestrator-code-throws-nothing": {
+      "case": "needs-nothing",
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "planned"
+    },
+    "orchestrator-code-catches-nothing": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "planned"
+    },
+    "port-methods-return-expected-failures": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "declined",
+      "reason": "TypeScript has no checked exceptions, so what an implementation of a port throws is not in its signature."
+    },
+    "driven-adapter-code-converts-expected-failures": {
+      "coverage": "convention-only",
+      "where": "README.md, Errors",
+      "intent": "declined",
+      "reason": "Which exceptions a library throws for expected failures is not known to any tool, and since every catch catches everything, a catch that converts can not be told from one that swallows."
     },
     "returned-failures-are-used": {
       "coverage": "partial",
@@ -453,7 +1057,118 @@
       "proof": [
         "src/rulebook/conformance.test.ts: returned-failures-are-used",
         "src/rulebook/conformance.test.ts: returned-failures-are-used misses a dropped sentinel"
-      ]
+      ],
+      "intent": "planned"
+    },
+    "failure-branches-act": {
+      "coverage": "partial",
+      "checks": [
+        "no-empty"
+      ],
+      "gap": "Only a branch that is empty is reported, whatever it was taken for. One that holds only a comment passes, and so does one that returns success from a function that itself returns failures.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: failure-branches-act",
+        "src/rulebook/conformance.test.ts: failure-branches-act misses a branch that holds a comment or returns success"
+      ],
+      "intent": "planned"
+    },
+    "explicit-discards-give-a-reason": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "sentinels-report-only-absence": {
+      "coverage": "none",
+      "note": "README.md, Errors, states an older convention, that null reports a function's one way to fail, which this clause no longer allows.",
+      "intent": "planned"
+    },
+    "sentinels-are-null-or-a-found-flag": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "each-project-table-has-an-id-type": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "id-types-accept-only-uuidv7s": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "ids-are-held-as-their-id-types": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "only-the-shared-id-unit-of-code-uses-third-party-uuid-code": {
+      "coverage": "none",
+      "note": "dependency-cruiser's core-is-pure no longer keeps every library from the core. imports-reach-nothing-impure reports third-party UUID code in the core only where its modules reach randomness, the clock or another impure operation, as a generator's do, and not for being UUID code. An adapter, an orchestrator and a test may reference it, and TypeScript has no shared ID unit-of-code yet to exempt.",
+      "intent": "planned"
+    },
+    "enums-are-stored-as-their-values": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "enum-columns-admit-only-their-enums-values": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "every-project-table-has-a-uuid-id-primary-key": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "id-columns-reject-other-uuid-versions": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "ids-say-nothing-about-when-rows-were-made": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "public-id-columns-are-unique-uuidv4s": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "each-public-id-has-a-type": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "public-id-types-accept-only-uuidv4s": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "nullable-columns-hold-only-variant-data": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "variant-data-columns-are-constrained-to-their-variants": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "sql-text-comes-only-from-the-query-compiler": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "queries-are-query-data": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "queries-are-built-in-driven-adapter-code": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "every-stored-value-comes-from-the-query": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "queries-perform-no-impure-operation": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "the-schema-supplies-no-values": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "no-value-depends-on-session-settings": {
+      "coverage": "none",
+      "intent": "planned"
     },
     "check-fails-on-unformatted-files": {
       "coverage": "full",
@@ -474,6 +1189,162 @@
       "proof": [
         "src/core/findProblems.test.ts: reports a Prettier option that differs from the baseline"
       ]
+    },
+    "type-checker-runs-at-its-strictest": {
+      "coverage": "partial",
+      "checks": [
+        "verify-settings"
+      ],
+      "gap": "verify reads strict and the six other options it lists. An option strict turns on, such as strictNullChecks or noImplicitAny, that the project turns off by itself beside strict isn't reported.",
+      "proof": [
+        "src/core/findProblems.test.ts: reports a strictness option that is turned off or left out",
+        "src/rulebook/conformance.test.ts: type-checker-runs-at-its-strictest misses an option of strict turned off by itself"
+      ],
+      "intent": "planned"
+    },
+    "baseline-settings-are-not-weakened": {
+      "coverage": "partial",
+      "checks": [
+        "verify-settings",
+        "verify-prettier"
+      ],
+      "gap": "Only the settings verify lists are compared. A rule that comes from typescript-eslint's presets, such as @typescript-eslint/no-explicit-any, can be turned off; a limit can be raised, since only a rule's severity is read, but for the switch check's options; a dependency-cruiser rule can be pointed at other paths; and a tsconfig option outside the seven is free.",
+      "proof": [
+        "src/core/findProblems.test.ts: reports a strictness option that is turned off or left out",
+        "src/core/findProblems.test.ts: reports a required rule that is weakened to a warning",
+        "src/core/findProblems.test.ts: reports a role's rule that a later block turned off",
+        "src/core/findProblems.test.ts: reports a banned syntax that a project dropped by replacing the list",
+        "src/core/findProblems.test.ts: reports a Prettier option that differs from the baseline",
+        "src/core/findProblems.test.ts: reports a dependency rule that is weakened or dropped",
+        "src/rulebook/conformance.test.ts: baseline-settings-are-not-weakened misses a rule verify does not list"
+      ],
+      "intent": "planned"
+    },
+    "checks-are-not-suppressed": {
+      "coverage": "partial",
+      "checks": [
+        "ban-ts-comment"
+      ],
+      "gap": "Only @ts-ignore, @ts-nocheck and a @ts-expect-error with no description are reported. A @ts-expect-error with a description, an eslint-disable comment, a directory that tsconfig.json excludes or eslint.config.js ignores, and hand-written JavaScript aren't.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: checks-are-not-suppressed",
+        "src/rulebook/conformance.test.ts: checks-are-not-suppressed misses a described suppression and an ESLint directive"
+      ],
+      "intent": "planned"
+    },
+    "check-task-runs-every-baseline-check": {
+      "coverage": "partial",
+      "checks": [
+        "verify-shared-tasks"
+      ],
+      "gap": "verify reads which tasks check runs, and whether it ignores their failure. A check task that Task skips, through status, sources, platforms or if, still counts as running the baseline's.",
+      "proof": [
+        "src/core/findProblems.test.ts: reports a shared task that no longer runs the baseline's own",
+        "src/core/findProblems.test.ts: reports an include that leaves out a shared task",
+        "src/core/findProblems.test.ts: reports an include that runs the baseline's tasks outside the project root",
+        "src/adapters/driven/gatherFacts.test.ts: reads what a project changed from the baseline through its real config files"
+      ],
+      "intent": "planned"
+    },
+    "every-third-party-dependency-is-listed": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "at-most-one-listed-dependency-per-capability": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "caches-live-under-the-cache-directory": {
+      "coverage": "partial",
+      "checks": [
+        "shared-task-caches"
+      ],
+      "gap": "A tool the project runs outside the shared tasks, such as vitest, is not checked.",
+      "proof": [
+        "src/core/findProblems.test.ts: reports a shared task that no longer runs the baseline's own"
+      ],
+      "intent": "declined",
+      "reason": "A check would need to know the cache files of every tool a project adds."
+    },
+    "gitignore-ignores-the-cache-directory": {
+      "coverage": "full",
+      "checks": [
+        "verify-gitignore"
+      ],
+      "proof": [
+        "src/core/findProblems.test.ts: asks for a .gitignore when there is none",
+        "src/core/findProblems.test.ts: accepts the cache line with the trailing spaces Git ignores"
+      ]
+    },
+    "every-port-has-one-set-of-contract-tests": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "fake-and-adapter-tests-run-the-contract-tests": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "check-task-runs-mutation-testing-on-the-core": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "core-tests-reference-only-the-core": {
+      "coverage": "none",
+      "note": "The dependency rules leave test files out, so a test of the core may import anything.",
+      "intent": "planned"
+    },
+    "every-port-has-one-fake": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "only-driven-adapters-and-fakes-stand-in-for-ports": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "fake-code-references-only-ports-values-and-fakes": {
+      "coverage": "partial",
+      "checks": [
+        "depcruise-fakes"
+      ],
+      "gap": "A fake may import any module under src/core/ and src/orchestrators/: the checks tell neither a decision from a value nor a port from the orchestrator it is declared with, so a fake that references decision code or an orchestrator isn't reported. Nor is one that imports a library.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: fake-code-references-only-ports-values-and-fakes"
+      ],
+      "intent": "planned"
+    },
+    "fake-code-performs-only-held-state": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "only-test-code-references-fake-code": {
+      "coverage": "full",
+      "checks": [
+        "depcruise-only-tests-import-fakes-and-test-code"
+      ],
+      "proof": [
+        "src/rulebook/conformance.test.ts: only-test-code-references-fake-code"
+      ],
+      "note": "Test code a project ships, under src/testing/, counts as test code by its path."
+    },
+    "orchestrator-test-case-calls-one-use-case-once": {
+      "coverage": "none",
+      "intent": "planned"
+    },
+    "no-mocking-libraries": {
+      "coverage": "partial",
+      "checks": [
+        "test-mocks"
+      ],
+      "gap": "Only vi.spyOn and vi.mock are reported: a stub made of vi.fn functions given scripted return values, and a mocking library such as sinon or ts-mockito, are not.",
+      "proof": [
+        "src/rulebook/conformance.test.ts: no-mocking-libraries",
+        "src/rulebook/conformance.test.ts: no-mocking-libraries misses a stub made of vi.fn functions"
+      ],
+      "intent": "planned"
+    },
+    "no-hand-written-scripted-doubles": {
+      "coverage": "none",
+      "intent": "planned"
     }
   }
 }

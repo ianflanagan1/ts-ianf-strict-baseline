@@ -1,7 +1,7 @@
 import { ESLintUtils } from '@typescript-eslint/utils';
 import ts from 'typescript';
 
-const createRule = ESLintUtils.RuleCreator((name) => `https://github.com/ianflanagan1/ts-baseline#${name}`);
+const createRule = ESLintUtils.RuleCreator((name) => `https://github.com/ianflanagan1/ts-ianf-strict-baseline#${name}`);
 
 // A Result is recognised by shape, not by name, so this rule needs nothing from the code it checks:
 // every member of the type has a boolean-literal `ok` and either a `value` or an `error`.

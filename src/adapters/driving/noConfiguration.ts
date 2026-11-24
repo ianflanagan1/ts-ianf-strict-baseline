@@ -1,7 +1,7 @@
 import { AST_NODE_TYPES, ESLintUtils, type TSESTree } from '@typescript-eslint/utils';
 import { isGlobal } from './scope.ts';
 
-const createRule = ESLintUtils.RuleCreator((name) => `https://github.com/ianflanagan1/ts-baseline#${name}`);
+const createRule = ESLintUtils.RuleCreator((name) => `https://github.com/ianflanagan1/ts-ianf-strict-baseline#${name}`);
 
 // The members of `process` that hold the program's configuration.
 const configurationMembers: ReadonlySet<string> = new Set(['env', 'argv']);

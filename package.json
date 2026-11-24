@@ -1,12 +1,12 @@
 {
-  "name": "@ianflanagan1/ts-baseline",
+  "name": "@ianflanagan1/ts-ianf-strict-baseline",
   "version": "0.1.0",
   "description": "Shared TypeScript strictness: an ESLint config with a no-unused-result rule, a tsconfig base, a Prettier config, dependency-cruiser rules, shared Taskfile tasks, and a check that a project still follows them",
   "license": "MIT",
   "author": "Ian Flanagan",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ianflanagan1/ts-baseline.git"
+    "url": "git+https://github.com/ianflanagan1/ts-ianf-strict-baseline.git"
   },
   "keywords": [
     "eslint",
@@ -31,7 +31,7 @@
     "./dependency-cruiser": "./dependency-cruiser.js"
   },
   "bin": {
-    "ts-baseline": "./dist/main.js"
+    "ts-ianf-strict-baseline": "./dist/main.js"
   },
   "files": [
     "dist",

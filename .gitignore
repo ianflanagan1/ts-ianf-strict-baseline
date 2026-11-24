@@ -3,3 +3,6 @@ dist/
 coverage/
 .DS_Store
 .devbox/
+/cache/
+# The conformance fixture's packages, which imports-reach-nothing-impure follows from the core.
+!src/fixtures/conformance/node_modules/

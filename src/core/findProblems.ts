@@ -41,6 +41,7 @@ export type ProjectFacts = {
   readonly packageManager: string | null;
   readonly devDependencies: ReadonlyArray<string>;
   readonly rootFiles: ReadonlyArray<string>;
+  readonly gitignore: ReadonlyArray<string> | null;
 };
 
 const requiredCompilerOptions = [
@@ -54,7 +55,7 @@ const requiredCompilerOptions = [
 ];
 
 const requiredErrorRules = [
-  'ts-baseline/no-unused-result',
+  'ts-ianf-strict-baseline/no-unused-result',
   '@typescript-eslint/switch-exhaustiveness-check',
   '@typescript-eslint/no-floating-promises',
   '@typescript-eslint/only-throw-error',
@@ -66,10 +67,26 @@ const requiredErrorRules = [
 
 // The rules the baseline turns on for each role, and where that role's files are.
 const requiredRoleRules: ReadonlyArray<{ readonly role: Role; readonly where: string; readonly rules: ReadonlyArray<string> }> = [
-  { role: 'core', where: 'src/core/', rules: ['ts-baseline/no-effects', 'ts-baseline/no-configuration'] },
-  { role: 'orchestrator', where: 'src/orchestrators/', rules: ['ts-baseline/no-effects', 'ts-baseline/no-configuration'] },
-  { role: 'driving-adapter', where: 'src/adapters/driving/', rules: ['ts-baseline/no-configuration', 'max-lines-per-function'] },
-  { role: 'driven-adapter', where: 'src/adapters/driven/', rules: ['ts-baseline/no-configuration', 'max-lines-per-function'] },
+  {
+    role: 'core',
+    where: 'src/core/',
+    rules: [
+      'ts-ianf-strict-baseline/no-effects',
+      'ts-ianf-strict-baseline/imports-reach-nothing-impure',
+      'ts-ianf-strict-baseline/no-configuration',
+    ],
+  },
+  {
+    role: 'orchestrator',
+    where: 'src/orchestrators/',
+    rules: ['ts-ianf-strict-baseline/no-effects', 'ts-ianf-strict-baseline/no-configuration'],
+  },
+  {
+    role: 'driving-adapter',
+    where: 'src/adapters/driving/',
+    rules: ['ts-ianf-strict-baseline/no-configuration', 'max-lines-per-function'],
+  },
+  { role: 'driven-adapter', where: 'src/adapters/driven/', rules: ['ts-ianf-strict-baseline/no-configuration', 'max-lines-per-function'] },
   { role: 'entrypoint', where: 'src/main.ts', rules: ['max-lines-per-function'] },
 ];
 
@@ -78,7 +95,7 @@ const requiredTasks = ['setup', 'check', 'format', 'lint-file'];
 // The project's task of each name must run the baseline's, so the commands come from the package.
 const sharedTasks = ['check', 'format', 'lint-file'];
 
-const baselineTaskfile = './node_modules/@ianflanagan1/ts-baseline/Taskfile.baseline.yml';
+const baselineTaskfile = './node_modules/@ianflanagan1/ts-ianf-strict-baseline/Taskfile.baseline.yml';
 
 const requiredDependencyRules = [
   'core-is-pure',
@@ -87,17 +104,25 @@ const requiredDependencyRules = [
   'driving-adapters-import-no-driven-adapter',
   'driven-adapters-import-only-core-and-driven-adapters',
   'entrypoint-is-not-imported',
+  'only-tests-import-fakes-and-test-code',
+  'fakes-import-only-core-orchestrators-and-fakes',
+  'test-code-imports-no-adapter',
   'no-container',
   'no-circular',
 ];
 
-const requiredDevDependencies = ['@ianflanagan1/ts-baseline', 'dependency-cruiser', 'knip', 'vitest'];
+const requiredDevDependencies = ['@ianflanagan1/ts-ianf-strict-baseline', 'dependency-cruiser', 'knip', 'vitest'];
 
 // Each entry is satisfied by any one of its files.
 const requiredRootFiles: ReadonlyArray<{ readonly what: string; readonly anyOf: ReadonlyArray<string> }> = [
   { what: 'a committed lockfile', anyOf: ['pnpm-lock.yaml', 'package-lock.json'] },
   { what: 'a knip config', anyOf: ['knip.json', 'knip.jsonc', '.knip.json', 'knip.config.ts'] },
 ];
+
+// The .gitignore line for the directory every project's tools keep their caches in.
+// COUPLED:tool-cache-dir:[=; //github.com/ianflanagan1/code-rulebook/rulebook/setups/ianf-strict/rules/project/tool-caches-are-ignored.yaml; //github.com/ianflanagan1/code-rulebook/rulebook/setups/ianf-strict/baselines.md;
+// //github.com/ianflanagan1/go-ianf-strict-baseline/internal/core/baseline/baseline.go; //github.com/ianflanagan1/php-ianf-strict-baseline/src/Core/ProjectProblems.php]
+const cacheIgnore = '/cache/';
 
 // Every way the project falls short of the baseline, each phrased as what to change.
 export function findProblems(facts: ProjectFacts): ReadonlyArray<string> {
@@ -110,16 +135,17 @@ export function findProblems(facts: ProjectFacts): ReadonlyArray<string> {
     ...taskfileProblems(facts.taskfile),
     ...dependencyCruiserProblems(facts.dependencyCruiserRules),
     ...packageProblems(facts),
+    ...gitignoreProblems(facts.gitignore),
   ];
 }
 
 function compilerOptionProblems(options: Readonly<Record<string, unknown>> | null): ReadonlyArray<string> {
   if (options === null) {
-    return ['No tsconfig.json at the project root: add one that extends @ianflanagan1/ts-baseline/tsconfig.json.'];
+    return ['No tsconfig.json at the project root: add one that extends @ianflanagan1/ts-ianf-strict-baseline/tsconfig.json.'];
   }
   return requiredCompilerOptions
     .filter((name) => options[name] !== true)
-    .map((name) => `tsconfig.json: \`${name}\` must be true, as it is in @ianflanagan1/ts-baseline/tsconfig.json.`);
+    .map((name) => `tsconfig.json: \`${name}\` must be true, as it is in @ianflanagan1/ts-ianf-strict-baseline/tsconfig.json.`);
 }
 
 function eslintProblems(rules: Readonly<Record<string, RuleSetting>> | null): ReadonlyArray<string> {
@@ -167,11 +193,14 @@ function prettierProblems(
   expected: Readonly<Record<string, unknown>>,
 ): ReadonlyArray<string> {
   if (options === null) {
-    return ['No Prettier config: add a .prettierrc.json containing "@ianflanagan1/ts-baseline/prettier".'];
+    return ['No Prettier config: add a .prettierrc.json containing "@ianflanagan1/ts-ianf-strict-baseline/prettier".'];
   }
   return Object.entries(expected)
     .filter(([name, value]) => options[name] !== value)
-    .map(([name, value]) => `Prettier: \`${name}\` must be ${JSON.stringify(value)}, as it is in @ianflanagan1/ts-baseline/prettier.`);
+    .map(
+      ([name, value]) =>
+        `Prettier: \`${name}\` must be ${JSON.stringify(value)}, as it is in @ianflanagan1/ts-ianf-strict-baseline/prettier.`,
+    );
 }
 
 function devboxProblems(devbox: DevboxFacts | null): ReadonlyArray<string> {
@@ -212,11 +241,15 @@ function taskfileProblems(taskfile: TaskfileFacts | null): ReadonlyArray<string>
 
 function dependencyCruiserProblems(rules: Readonly<Record<string, Severity>> | null): ReadonlyArray<string> {
   if (rules === null) {
-    return ['No dependency-cruiser config: add a .dependency-cruiser.js that extends @ianflanagan1/ts-baseline/dependency-cruiser.'];
+    return [
+      'No dependency-cruiser config: add a .dependency-cruiser.js that extends @ianflanagan1/ts-ianf-strict-baseline/dependency-cruiser.',
+    ];
   }
   return requiredDependencyRules
     .filter((name) => rules[name] !== 'error')
-    .map((name) => `dependency-cruiser: \`${name}\` must be an error, as it is in @ianflanagan1/ts-baseline/dependency-cruiser.`);
+    .map(
+      (name) => `dependency-cruiser: \`${name}\` must be an error, as it is in @ianflanagan1/ts-ianf-strict-baseline/dependency-cruiser.`,
+    );
 }
 
 function packageProblems(facts: ProjectFacts): ReadonlyArray<string> {
@@ -229,6 +262,16 @@ function packageProblems(facts: ProjectFacts): ReadonlyArray<string> {
     .filter((required) => !required.anyOf.some((file) => facts.rootFiles.includes(file)))
     .map((required) => `Add ${required.what} at the project root (${required.anyOf.join(' or ')}).`);
   return [...manager, ...dependencies, ...files];
+}
+
+// Git ignores a line's trailing spaces.
+function gitignoreProblems(lines: ReadonlyArray<string> | null): ReadonlyArray<string> {
+  if (lines === null) {
+    return [`No .gitignore: add one with the line \`${cacheIgnore}\`, for the directory tools keep their caches in.`];
+  }
+  return lines.some((line) => line.trimEnd() === cacheIgnore)
+    ? []
+    : [`.gitignore: add the line \`${cacheIgnore}\`, for the directory tools keep their caches in.`];
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {

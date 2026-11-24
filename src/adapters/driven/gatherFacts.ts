@@ -19,17 +19,18 @@ import type {
 } from '../../core/findProblems.ts';
 
 // Neither file exists: ESLint and Prettier only match the name against their globs and overrides.
-const probeFile = 'ts-baseline-probe.ts';
+const probeFile = 'ts-ianf-strict-baseline-probe.ts';
 
 // A file in each role, for ESLint to work out the rules that apply there. They needn't exist either.
-// COUPLED:ts-roles. = src/adapters/driving/eslint.ts (the paths of each role)
+// COUPLED:ts-roles:[same-shape] a probe file for each role
 const roleProbeFiles: Readonly<Record<Role, string>> = {
-  core: 'src/core/ts-baseline-probe.ts',
-  orchestrator: 'src/orchestrators/ts-baseline-probe.ts',
-  'driving-adapter': 'src/adapters/driving/ts-baseline-probe.ts',
-  'driven-adapter': 'src/adapters/driven/ts-baseline-probe.ts',
+  core: 'src/core/ts-ianf-strict-baseline-probe.ts',
+  orchestrator: 'src/orchestrators/ts-ianf-strict-baseline-probe.ts',
+  'driving-adapter': 'src/adapters/driving/ts-ianf-strict-baseline-probe.ts',
+  'driven-adapter': 'src/adapters/driven/ts-ianf-strict-baseline-probe.ts',
   entrypoint: 'src/main.ts',
 };
+// COUPLED:ts-roles:END
 
 // The package's own Prettier config, three levels up from both src/adapters/driven and dist/adapters/driven.
 const expectedPrettierFile = fileURLToPath(new URL('../../../prettier.json', import.meta.url));
@@ -79,7 +80,12 @@ export async function gatherFacts(dir: string): Promise<ProjectFacts> {
     packageManager: stringAt(packageJson, ['packageManager']),
     devDependencies: Object.keys(recordAt(packageJson, ['devDependencies']) ?? {}),
     rootFiles,
+    gitignore: await readLines(path.join(dir, '.gitignore')),
   };
+}
+
+async function readLines(file: string): Promise<ReadonlyArray<string> | null> {
+  return existsSync(file) ? (await readFile(file, 'utf8')).split(/\r?\n/) : null;
 }
 
 // devbox.json lists packages as `name@version` strings, or as an object from name to version.

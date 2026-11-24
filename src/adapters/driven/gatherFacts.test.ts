@@ -12,7 +12,7 @@ describe('gatherFacts', () => {
 
   it('reads what a project changed from the baseline through its real config files', async () => {
     expect(findProblems(await gatherFacts(fixture('departing')))).toEqual([
-      'tsconfig.json: `exactOptionalPropertyTypes` must be true, as it is in @ianflanagan1/ts-baseline/tsconfig.json.',
+      'tsconfig.json: `exactOptionalPropertyTypes` must be true, as it is in @ianflanagan1/ts-ianf-strict-baseline/tsconfig.json.',
       'ESLint: `@typescript-eslint/no-floating-promises` must be an error, as it is in the baseline.',
       'ESLint: `no-restricted-syntax` no longer bans `TSEnumDeclaration`; spread `bannedSyntax` into it.',
       'ESLint: `no-restricted-syntax` no longer bans `:function > AssignmentPattern`; spread `bannedSyntax` into it.',
@@ -21,14 +21,15 @@ describe('gatherFacts', () => {
       'ESLint: `no-restricted-syntax` no longer bans `TSPropertySignature[optional=true]`; spread `bannedSyntax` into it.',
       "ESLint: `no-restricted-syntax` no longer bans `VariableDeclaration[kind='let'], VariableDeclaration[kind='var']`; spread `bannedSyntax` into it.",
       "ESLint: `no-restricted-syntax` no longer bans `:matches(ClassDeclaration, ClassExpression)[superClass]:not([superClass.type='Identifier'][superClass.name=/^(Error|AggregateError|EvalError|RangeError|ReferenceError|SyntaxError|TypeError|URIError)$/])`; spread `bannedSyntax` into it.",
-      'Prettier: `printWidth` must be 140, as it is in @ianflanagan1/ts-baseline/prettier.',
+      'Prettier: `printWidth` must be 140, as it is in @ianflanagan1/ts-ianf-strict-baseline/prettier.',
       'No devbox.json: pin Node, the package manager and go-task in devbox.',
       'Taskfile: add a `format` task.',
       "Taskfile: drop `dir` from the baseline's include; its tasks check the directory they run in, which must be the project root.",
       "Taskfile: don't exclude `format` from the baseline's tasks.",
       'Taskfile: have `check` run `task: shared:check`.',
-      'dependency-cruiser: `no-circular` must be an error, as it is in @ianflanagan1/ts-baseline/dependency-cruiser.',
+      'dependency-cruiser: `no-circular` must be an error, as it is in @ianflanagan1/ts-ianf-strict-baseline/dependency-cruiser.',
       'package.json: pin the package manager with a `packageManager` field.',
+      '.gitignore: add the line `/cache/`, for the directory tools keep their caches in.',
     ]);
   });
 });

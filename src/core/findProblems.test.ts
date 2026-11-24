@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bannedSyntax } from './bannedSyntax.ts';
-import { aConformingProject } from './testing/aProject.ts';
+import { aConformingProject } from '../testing/aProject.ts';
 import { findProblems } from './findProblems.ts';
 
 describe('findProblems', () => {
@@ -10,15 +10,15 @@ describe('findProblems', () => {
 
   it('asks for a tsconfig when there is none', () => {
     expect(findProblems(aConformingProject().withCompilerOptions(null).build())).toEqual([
-      'No tsconfig.json at the project root: add one that extends @ianflanagan1/ts-baseline/tsconfig.json.',
+      'No tsconfig.json at the project root: add one that extends @ianflanagan1/ts-ianf-strict-baseline/tsconfig.json.',
     ]);
   });
 
   it('reports a strictness option that is turned off or left out', () => {
     const facts = aConformingProject().withCompilerOption('strict', false).withCompilerOption('noImplicitOverride', undefined).build();
     expect(findProblems(facts)).toEqual([
-      'tsconfig.json: `strict` must be true, as it is in @ianflanagan1/ts-baseline/tsconfig.json.',
-      'tsconfig.json: `noImplicitOverride` must be true, as it is in @ianflanagan1/ts-baseline/tsconfig.json.',
+      'tsconfig.json: `strict` must be true, as it is in @ianflanagan1/ts-ianf-strict-baseline/tsconfig.json.',
+      'tsconfig.json: `noImplicitOverride` must be true, as it is in @ianflanagan1/ts-ianf-strict-baseline/tsconfig.json.',
     ]);
   });
 
@@ -29,8 +29,10 @@ describe('findProblems', () => {
   });
 
   it('reports a required rule that is weakened to a warning', () => {
-    const facts = aConformingProject().withEslintRule('ts-baseline/no-unused-result', { severity: 'warn', options: [] }).build();
-    expect(findProblems(facts)).toEqual(['ESLint: `ts-baseline/no-unused-result` must be an error, as it is in the baseline.']);
+    const facts = aConformingProject()
+      .withEslintRule('ts-ianf-strict-baseline/no-unused-result', { severity: 'warn', options: [] })
+      .build();
+    expect(findProblems(facts)).toEqual(['ESLint: `ts-ianf-strict-baseline/no-unused-result` must be an error, as it is in the baseline.']);
   });
 
   it('reports a switch check that lets a default arm cover a union', () => {
@@ -48,15 +50,20 @@ describe('findProblems', () => {
     const error = { severity: 'error', options: [] } as const;
     const facts = aConformingProject()
       .withEslintRoleRules({
-        core: { 'ts-baseline/no-effects': off, 'ts-baseline/no-configuration': error },
-        orchestrator: { 'ts-baseline/no-effects': error, 'ts-baseline/no-configuration': error },
-        'driving-adapter': { 'ts-baseline/no-configuration': error, 'max-lines-per-function': error },
-        'driven-adapter': { 'ts-baseline/no-configuration': error, 'max-lines-per-function': error },
+        core: {
+          'ts-ianf-strict-baseline/no-effects': off,
+          'ts-ianf-strict-baseline/imports-reach-nothing-impure': off,
+          'ts-ianf-strict-baseline/no-configuration': error,
+        },
+        orchestrator: { 'ts-ianf-strict-baseline/no-effects': error, 'ts-ianf-strict-baseline/no-configuration': error },
+        'driving-adapter': { 'ts-ianf-strict-baseline/no-configuration': error, 'max-lines-per-function': error },
+        'driven-adapter': { 'ts-ianf-strict-baseline/no-configuration': error, 'max-lines-per-function': error },
         entrypoint: {},
       })
       .build();
     expect(findProblems(facts)).toEqual([
-      'ESLint: `ts-baseline/no-effects` must be an error in src/core/, as it is in the baseline.',
+      'ESLint: `ts-ianf-strict-baseline/no-effects` must be an error in src/core/, as it is in the baseline.',
+      'ESLint: `ts-ianf-strict-baseline/imports-reach-nothing-impure` must be an error in src/core/, as it is in the baseline.',
       'ESLint: `max-lines-per-function` must be an error in src/main.ts, as it is in the baseline.',
     ]);
   });
@@ -79,12 +86,14 @@ describe('findProblems', () => {
 
   it('reports a Prettier option that differs from the baseline', () => {
     const facts = aConformingProject().withPrettierOptions({ printWidth: 80, singleQuote: true, trailingComma: 'all' }).build();
-    expect(findProblems(facts)).toEqual(['Prettier: `printWidth` must be 140, as it is in @ianflanagan1/ts-baseline/prettier.']);
+    expect(findProblems(facts)).toEqual([
+      'Prettier: `printWidth` must be 140, as it is in @ianflanagan1/ts-ianf-strict-baseline/prettier.',
+    ]);
   });
 
   it('asks for a Prettier config when there is none', () => {
     expect(findProblems(aConformingProject().withPrettierOptions(null).build())).toEqual([
-      'No Prettier config: add a .prettierrc.json containing "@ianflanagan1/ts-baseline/prettier".',
+      'No Prettier config: add a .prettierrc.json containing "@ianflanagan1/ts-ianf-strict-baseline/prettier".',
     ]);
   });
 
@@ -124,7 +133,7 @@ describe('findProblems', () => {
   it("asks for the baseline's tasks when the Taskfile does not include them", () => {
     const facts = aConformingProject().withBaselineInclude(null).withTask('check', []).build();
     expect(findProblems(facts)).toEqual([
-      "Taskfile: include the baseline's tasks: `includes: { baseline: { taskfile: ./node_modules/@ianflanagan1/ts-baseline/Taskfile.baseline.yml, optional: true } }`.",
+      "Taskfile: include the baseline's tasks: `includes: { baseline: { taskfile: ./node_modules/@ianflanagan1/ts-ianf-strict-baseline/Taskfile.baseline.yml, optional: true } }`.",
       'Taskfile: have `check` run `task: baseline:check`.',
     ]);
   });
@@ -160,7 +169,7 @@ describe('findProblems', () => {
 
   it('asks for a dependency-cruiser config when there is none', () => {
     expect(findProblems(aConformingProject().withDependencyCruiserRules(null).build())).toEqual([
-      'No dependency-cruiser config: add a .dependency-cruiser.js that extends @ianflanagan1/ts-baseline/dependency-cruiser.',
+      'No dependency-cruiser config: add a .dependency-cruiser.js that extends @ianflanagan1/ts-ianf-strict-baseline/dependency-cruiser.',
     ]);
   });
 
@@ -172,18 +181,24 @@ describe('findProblems', () => {
         'driving-adapters-import-no-driven-adapter': 'error',
         'driven-adapters-import-only-core-and-driven-adapters': 'error',
         'entrypoint-is-not-imported': 'error',
+        'only-tests-import-fakes-and-test-code': 'error',
+        'fakes-import-only-core-orchestrators-and-fakes': 'error',
+        'test-code-imports-no-adapter': 'error',
         'no-container': 'error',
         'no-circular': 'warn',
       })
       .build();
     expect(findProblems(facts)).toEqual([
-      'dependency-cruiser: `core-is-pure` must be an error, as it is in @ianflanagan1/ts-baseline/dependency-cruiser.',
-      'dependency-cruiser: `no-circular` must be an error, as it is in @ianflanagan1/ts-baseline/dependency-cruiser.',
+      'dependency-cruiser: `core-is-pure` must be an error, as it is in @ianflanagan1/ts-ianf-strict-baseline/dependency-cruiser.',
+      'dependency-cruiser: `no-circular` must be an error, as it is in @ianflanagan1/ts-ianf-strict-baseline/dependency-cruiser.',
     ]);
   });
 
   it('reports an unpinned package manager and missing tools', () => {
-    const facts = aConformingProject().withPackageManager(null).withDevDependencies(['@ianflanagan1/ts-baseline', 'vitest']).build();
+    const facts = aConformingProject()
+      .withPackageManager(null)
+      .withDevDependencies(['@ianflanagan1/ts-ianf-strict-baseline', 'vitest'])
+      .build();
     expect(findProblems(facts)).toEqual([
       'package.json: pin the package manager with a `packageManager` field.',
       'package.json: add `dependency-cruiser` to devDependencies.',
@@ -193,7 +208,7 @@ describe('findProblems', () => {
 
   it('counts the baseline package itself as depending on the baseline', () => {
     const facts = aConformingProject()
-      .withPackageName('@ianflanagan1/ts-baseline')
+      .withPackageName('@ianflanagan1/ts-ianf-strict-baseline')
       .withDevDependencies(['dependency-cruiser', 'knip', 'vitest'])
       .build();
     expect(findProblems(facts)).toEqual([]);
@@ -202,6 +217,27 @@ describe('findProblems', () => {
   it('accepts any one of the files that can satisfy a requirement', () => {
     const facts = aConformingProject().withRootFiles(['package-lock.json', 'knip.config.ts']).build();
     expect(findProblems(facts)).toEqual([]);
+  });
+
+  it('asks for a .gitignore when there is none', () => {
+    expect(findProblems(aConformingProject().withGitignore(null).build())).toEqual([
+      'No .gitignore: add one with the line `/cache/`, for the directory tools keep their caches in.',
+    ]);
+  });
+
+  it.each([
+    ['has no line for it', ['node_modules/']],
+    ['ignores it at any depth', ['cache/']],
+    ['ignores only a file of that name', ['/cache']],
+    ['has it commented out', ['# /cache/']],
+  ])('reports a .gitignore that %s', (_, lines) => {
+    expect(findProblems(aConformingProject().withGitignore(lines).build())).toEqual([
+      '.gitignore: add the line `/cache/`, for the directory tools keep their caches in.',
+    ]);
+  });
+
+  it('accepts the cache line with the trailing spaces Git ignores', () => {
+    expect(findProblems(aConformingProject().withGitignore(['/cache/  ']).build())).toEqual([]);
   });
 
   it('reports missing root files', () => {

@@ -10,5 +10,5 @@
     "checkJs": false
   },
   "include": ["src", "types"],
-  "exclude": ["src/**/*.test.ts", "src/fixtures", "src/core/testing"]
+  "exclude": ["src/**/*.test.ts", "src/fixtures", "src/testing"]
 }

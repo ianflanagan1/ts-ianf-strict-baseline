@@ -1,7 +1,7 @@
 import { AST_NODE_TYPES, ESLintUtils, type TSESLint, type TSESTree } from '@typescript-eslint/utils';
 import { isGlobal } from './scope.ts';
 
-const createRule = ESLintUtils.RuleCreator((name) => `https://github.com/ianflanagan1/ts-baseline#${name}`);
+const createRule = ESLintUtils.RuleCreator((name) => `https://github.com/ianflanagan1/ts-ianf-strict-baseline#${name}`);
 
 type Effect = { readonly does: string; readonly fix: string };
 
