@@ -1,10 +1,4 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.18.4/.schema/devbox.schema.json",
-  "packages": [
-    "nodejs@24.21.0",
-    "pnpm@12.9.0",
-    "go-task@3.53.1",
-    "go@1.27.3",
-    "github:ianflanagan1/coupled-tags-lint/v0.2.0#coupled-tags-lint"
-  ]
+  "packages": ["nodejs@24.21.0", "pnpm@12.9.0", "go-task@3.53.1", "go@1.27.3", "github:ianflanagan1/coupled/v0.3.0#coupled"]
 }

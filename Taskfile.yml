@@ -22,7 +22,7 @@ tasks:
       - task: build
       - task: baseline:check
       - task: rulebook
-      - coupled-tags-lint
+      - coupled
 
   rulebook-coverage:
     desc: Write rulebook-coverage.json, how ts-ianf-strict-baseline enforces the code rulebook
